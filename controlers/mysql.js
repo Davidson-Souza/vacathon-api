@@ -13,23 +13,31 @@ con.connect(function(err) {
 
 exports.db = 
 {
-    loadUserQuery:"SELECT * FROM profile WHERE id=1",
-    createUserQuery:"INSERT INTO profile(name, age, hashedPassword, email, metaInfo) VALUES(?, ?, ?, ?, ?)",
+    loadUserQuery:"SELECT * FROM profile WHERE id=?",
+    createUserQuery:"INSERT INTO profile(name, age, password, email, metaInfo) VALUES(?, ?, ?, ?, ?)",
     getUser: (uid, next) =>
     {   
-        let res = false;
-        con.query(this.loadUserQuery,[uid], function (err, result, fields) {
+        con.query("SELECT * FROM profile WHERE id=?",[uid], function (err, result, fields) {
           if (err != null) return false;
-          next(result[0])
+          next(false, result[0])
         });
+    },
+    getUserByName:(name, next)=>
+    {
+      con.query("SELECT * FROM profile WHERE email=?",[name], function (err, result, fields) {
+        if (err != null)
+          next(err);
+        else
+          next(false, result[0])
+      });
     },
     createUser:function(u)
     {
       return new Promise((a, r) =>
       {
-        if(!(u && u.name && u.age && u.hashedPassword && u.email && u.metaInfo))
+        if(!(u && u.name && u.age && u.password && u.email && u.metaInfo))
           r(400, "Missing information");
-        con.query(this.createUserQuery, [u.name, u.age, u.hashedPassword, u.email, u.metaInfo], (e, v, f) =>
+        con.query(this.createUserQuery, [u.name, u.age, u.password, u.email, u.metaInfo], (e, v, f) =>
         {
           if(e)
           {

@@ -4,7 +4,7 @@ const statusDb = require("./sqlite").db
 /** Verify if a passed string is potentially harmful */
 function sanitize(str, isEmail = false)
 {
-    if (str == null || str == undefined || str.length>100)
+    if (str == null || str == undefined || str.length>256)
         return -1;
     
     let c = "";
@@ -21,7 +21,7 @@ function sanitize(str, isEmail = false)
 /** How a user should looks like */
 const baseUser = 
 {
-    name:0, age:0, hashedPassword:0, email:0, metaInfo:0
+    name:0, age:0, password:0, email:0, metaInfo:0
 }
 exports.default = 
 {
@@ -46,18 +46,54 @@ exports.default =
       });
      
     },
+    logIn: async function(req, res, next)
+    {
+        if(!(req.body))
+            return res.status(400).json({ok:false, err:"Missing body"})
+        if(!(req.body.password))
+            return res.status(400).json({ok:false, err:"Missing password hash"})
+        if(!(req.body.email))
+            return res.status(400).json({ok:false, err:"Missing email"})
+
+        permanentStorage.getUserByName(req.body.email, async function(e, d)
+        {
+            //TODO: Catch errors
+            //if(e)
+            //    console.log(e);
+            if(d)
+            if(d.password == req.body.password)
+            {
+                let cookie = await statusDb.createCookie(d.id);
+                res.status(200).json({ok:true, cookie:cookie})
+            }
+        })
+    },
     getUserInfo: async function(req, res, next) 
     {
-      /** This request is only possible for logged ones */
-      if (!(req.cookies && req.cookies.userId))
-        return res.status(403).end("Missing cookie");
+        /** This request is only possible for logged ones */
+        if (!(req.cookies && req.cookies.userId))
+            return res.status(403).json({ok:false, err:"Missing cookie"});
+        const cookie = req.cookies.userId;
     
-      const id = req.cookies.userId;
-    
-      /** Check whether there is some kind of suspicius data, like some sql injection attack */
-      if ((await sanitize(id) < 0))
-        return res.status(403).end("Forbidden character failed");
-      statusDb.validateCookie(req.cookies.userId)
+        /** Check whether there is some kind of suspicius data, like some sql injection attack */
+        if ((await sanitize(cookie) < 0))
+            return res.status(403).json({ok:false, err:"Forbidden character"});
+        statusDb.validateCookie(cookie, async function (e, d)
+        {
+
+            /** Verify if the uid exists and belong to the authenticated user */
+            if(e) return res.status(500).json({ok:false, err:"Internal error"})
+            if(!d || !d[0] || !d[0].uid) return res.status(403).json({ok:false, err:"Must be logged to do this"});
+
+            /** If all happens well, return the values */
+            await permanentStorage.getUser(d[0].uid, (e, r) =>{
+                console.log(r)
+                if(e) return res.status(500).json({ok:false, err:"Internal error"})
+                if(r) return res.status(200).json({ok:true, data:r});
+                return res.status(200).end("Olá")
+            });
+
+        });
     },
     createUser: async function (req, res, next)
     {
@@ -65,13 +101,13 @@ exports.default =
             return res.json({ok:false, err:"Missing args"});
         let userInfo = baseUser;
         const b = req.body
-        if(!b.name || !b.age || !b.hashedPassword || !b.email || !b.metaInfo)
+        if(!b.name || !b.age || !b.password || !b.email || !b.metaInfo)
             return res.status(400).json({ok:false, err:"Missing information"});
 
         /* Manually copy each field, for security reasons */
         if(sanitize(b.name)>0) userInfo.name = b.name; else return res.status(400).json({ok:false, err:"Invalid character found name"});
         if(sanitize(b.age)>0) userInfo.age = b.age; else return res.status(400).json({ok:false, err:"Invalid character found age"});
-        if(sanitize(b.hashedPassword) > 0) userInfo.hashedPassword = b.hashedPassword; else return res.status(400).json({ok:false, err:"Invalid character found pass"});
+        if(sanitize(b.password) > 0) userInfo.password = b.password; else return res.status(400).json({ok:false, err:"Invalid character found pass"});
         if(sanitize(b.email, true) > 0) userInfo.email = b.email; else return res.status(400).json({ok:false, err:"Invalid character found email"});
         if(sanitize(b.metaInfo) > 0) userInfo.metaInfo = b.metaInfo; else return res.status(400).json({ok:false, err:"Invalid character found metainfo"});
         
