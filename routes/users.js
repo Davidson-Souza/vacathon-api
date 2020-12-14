@@ -17,6 +17,7 @@ router.get('/getUserInfo', controler.getUserInfo);
 
 /* Create a new user, aka signup */
 router.post('/createUser/',controler.createUser)
+
 /* Login an user */
 router.post("/authenticateUser/", controler.logIn)
 //TODO: implement more routes
