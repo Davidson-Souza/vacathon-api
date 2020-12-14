@@ -2,10 +2,12 @@ var express = require('express');
 var router = express.Router();
 const permanentStorage = require("./mysql").db
 const statusDb = require("./sqlite").db
-const cooke = require("./sqlite").cookie
 
+/** Verify if a passed string is potentially harmful */
 function sanitize(str)
 {
+  if (str == null || str == undefined || str.length>100)
+    return -1;
   for (let i = 0; i < str.length; i++)
     if(str.charAt(i) < '0' || str.charAt(i) > 'z')
       return -1;
