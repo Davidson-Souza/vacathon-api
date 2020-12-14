@@ -3,7 +3,7 @@ var router = express.Router();
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.end("Something went wrong! Method not allowed!");
+  res.json({ok:false, err:"Method not allowed!"});
 });
 
 module.exports = router;

@@ -9,9 +9,18 @@ exports.db =
     {
         db.run("INSERT INTO cookies(uid cookie) VALUES (? ?)", [uid, cookie])
     },
-    validateCookie:(u, c) =>
+    lookUpCookie:(c) =>
     {
-        db.run("SELECT * FROM cookies WHERE id=?",[u], (e, d) =>
+        db.run("SELECT * FROM cookies WHERE cookie=?",[c], (e, d) =>
+        {
+            if (e)
+                console.log(e)
+            console.log(d);
+        });
+    },
+    validateCookie:(c) =>
+    {
+        db.run("SELECT * FROM cookies WHERE cookie=?",[c], (e, d) =>
         {
             if (e)
                 console.log(e)
