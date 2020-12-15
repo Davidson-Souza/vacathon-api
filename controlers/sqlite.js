@@ -7,24 +7,29 @@
 const sqlite3 = require("sqlite3")
 const sqliteconf = require("../config.json").sqlite
 
+/** Some queries to help */
+const insetQuery = `INSERT INTO cookies(uid, cookie) VALUES(?, ?)`;
+const selectQuery = "SELECT uid, cookie FROM cookies WHERE cookie=?"
 /** An instance of the SQLite module */
-let db = new sqlite3.Database(sqliteconf.dbFile);
+db = new sqlite3.Database(sqliteconf.dbFile);
 
 /** Try to create a new table. If it exists, just skip */
 db.run('CREATE TABLE cookies(uid, cookie)', (e) =>
 {
     if (e.errno == 1) console.log("SQLite3 table already there");
+    else return -1;
 });
-
-/** Some queries to help */
-const insetQuery = `INSERT INTO cookies(uid, cookie) VALUES(?, ?)`;
-const selectQuery = "SELECT uid, cookie FROM cookies WHERE cookie=?"
-
+let isWorking = true;
 /** The actual module */
 exports.db = 
 {
+    isWorking,
     createCookie:async (uid) =>
     {
+        if (!this.db.isWorking)
+        {
+            return -1;
+        }
         cookie = Math.floor(Math.random() * 123123123123123123123);
         // insert one row into the langs table
         db.run(insetQuery, [uid, cookie], function(err) {
@@ -34,6 +39,15 @@ exports.db =
     });
         return cookie;
     },
+    deleteCookie: (c) =>
+    {
+        db.run(`DELETE FROM cookies WHERE cookie=${c}`, (e, r) =>
+        {
+            if(e) return e;
+        })
+        return true;
+    },
+
     lookUpCookie:(c) =>
     {
         db.run(selectQuery,[c], (e, d) =>

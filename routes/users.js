@@ -22,5 +22,12 @@ router.post('/createUser/',controler.createUser)
 
 /* Login an user */
 router.post("/authenticateUser/", controler.logIn)
+
+/* Logout user */
+/*
+  Note: The user to be logout is passed through the cookie, no more information needed
+*/
+router.get("/logout/")
 //TODO: implement more routes
+
 module.exports = router;

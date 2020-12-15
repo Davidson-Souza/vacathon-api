@@ -1,5 +1,5 @@
-const permanentStorage = require("./mysql").db
-const statusDb = require("./sqlite").db
+const permanentStorage = require("./mysql").db;
+const statusDb = require("./sqlite").db;
 
 /** Verify if a passed string is potentially harmful */
 function sanitize(str, isEmail = false)
@@ -38,7 +38,7 @@ exports.default =
         if(!req.params || !req.params.userId)
             return res.status(403).json({ok:false, err:"Missing arguments"})
         const id = req.params.userId
-        /** Check whether there is some kind of suspicius data, like some sql injection attack */
+        /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(id) < 0))
             return res.status(403).json({ok:false, err:"Forbidden character failed"});
       
@@ -127,6 +127,7 @@ exports.default =
     },
     getUserInfo: async function(req, res, next) 
     {
+
         /** This request is only possible for logged ones */
         if (!(req.cookies && req.cookies.userId))
             return res.status(403).json({ok:false, err:"Missing cookie"});
@@ -144,7 +145,7 @@ exports.default =
             if(sanitize(d[0].uid) < 0) return res.status(403).json({ok:false, err:"Forbidden character"});
             
             /** If all happens well, return the values */
-            await permanentStorage.getUserPrivateInfo(d[0].uid, (e, r) =>
+            await permanentStorage.getUserPrivateInfoById(d[0].uid, (e, r) =>
             {
                 if(e) return res.status(500).json({ok:false, err:"Internal error"})
                 if(r) return res.status(200).json({ok:true, data:r});
@@ -152,8 +153,25 @@ exports.default =
 
         });
     },
+    logOut:(req, res, next) =>
+    {
+        if(!(req.cookie && req.cookie.userId))
+            return res.status(403).json({ok:false, err:"Missing cookie"})
+        
+        const cookie = req.cookie.userId;
+        
+        if((await sanitize(cookie))< 0)
+            return res.status(400).json({ok:false, err:"Forbidden character"});
+        
+        if(statusDb.deleteCookie(cookie))
+            return res.status(200).json({ok:true});
+        
+        return res.status(500).json({ok:false, err:"Something went wrong"});
+
+    },
     createUser: async function (req, res, next)
     {
+
         if(!req.body)
             return res.json({ok:false, err:"Missing args"});
         
@@ -169,9 +187,10 @@ exports.default =
         if(sanitize(b.password) > 0) userInfo.password = b.password; else return res.status(400).json({ok:false, err:"Invalid character found pass"});
         if(sanitize(b.email, true) > 0) userInfo.email = b.email; else return res.status(400).json({ok:false, err:"Invalid character found email"});
         if(sanitize(b.metaInfo) > 0) userInfo.metaInfo = b.metaInfo; else return res.status(400).json({ok:false, err:"Invalid character found metainfo"});
-        
+
         permanentStorage.createUser(userInfo)
         .then(()=>{
+
             return res.status(200).json({ok:true});
         }).catch((e, d) =>
         {
