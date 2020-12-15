@@ -4,10 +4,12 @@ const statusDb = require("./sqlite").db
 /** Verify if a passed string is potentially harmful */
 function sanitize(str, isEmail = false)
 {
+    /** Is empty or too big? */
     if (str == null || str == undefined || str.length>256)
         return -1;
     
     let c = "";
+    /** Shouldn't have any non-alphanumeric digit (except emails) */
     for (let i = 0; i<str.length; i++)
     {
         c = str.charAt(i);
@@ -29,43 +31,98 @@ exports.default =
     {
       return res.status(403).json({ok:false, err:"Missing id param"})
     },
-    getUserMetaInfo: async function(req, res, next) 
+    getUserMetaInfoById: async function(req, res, next) 
     {
-      const id = req.params.userId
-      /** Check whether there is some kind of suspicius data, like some sql injection attack */
-      if ((await sanitize(id) < 0))
-        return res.status(403).json({ok:false, err:"Forbidden character failed"});
+        // This probably will never happens, thanks to the fallback above.
+        // But... Who knows? It's better just prevent...
+        if(!req.params || !req.params.userId)
+            return res.status(403).json({ok:false, err:"Missing arguments"})
+        const id = req.params.userId
+        /** Check whether there is some kind of suspicius data, like some sql injection attack */
+        if ((await sanitize(id) < 0))
+            return res.status(403).json({ok:false, err:"Forbidden character failed"});
       
-      /** Call the mysql to retrieve the data */
-      await permanentStorage.getUser(id, (d) =>
-      {
-        //TODO: catch errors appropriately.
-        if (!d)
-          return res.json({ok:false, err:"User not found"})
-        return res.json({ok:true, data:d})
+        /** Call the mysql to retrieve the data */
+        await permanentStorage.getUserById(id, (e, d) =>
+        {
+            if(e) 
+                return res.status(500).json({ok:false, err:"Internal error"})
+                //TODO: Log it
+            if (!d)
+                return res.json({ok:false, err:"User not found"})
+            return res.json({ok:true, data:d})
+      });
+     
+    },
+    getUserMetaInfoByName: async function(req, res, next) 
+    {
+        // This probably will never happens, thanks to the fallback above.
+        // But... Who knows? It's better just prevent...
+        if(!req.params || !req.params.userName)
+            return res.status(403).json({ok:false, err:"Missing arguments"})
+        const name = req.params.userName
+        /** Check whether there is some kind of suspicius data, like some sql injection attack */
+        if ((await sanitize(name) < 0))
+            return res.status(403).json({ok:false, err:"Forbidden character failed"});
+      
+        /** Call the mysql to retrieve the data */
+        await permanentStorage.getUserByName(name, (e, d) =>
+        {
+            if(e) 
+                return res.status(500).json({ok:false, err:"Internal error"})
+                //TODO: Log it
+            if (!d)
+                return res.json({ok:false, err:"User not found"})
+            return res.json({ok:true, data:d})
+      });
+    },
+    getUserMetaInfoByEmail: async function(req, res, next) 
+    {
+        // This probably will never happens, thanks to the fallback above.
+        // But... Who knows? It's better just prevent...
+        if(!req.params || !req.params.email)
+            return res.status(403).json({ok:false, err:"Missing arguments"})
+        const email = req.params.email
+        /** Check whether there is some kind of suspicius data, like some sql injection attack */
+        if ((await sanitize(email, true) < 0))
+            return res.status(403).json({ok:false, err:"Forbidden character failed"});
+      
+        /** Call the mysql to retrieve the data */
+        await permanentStorage.getUserByEmail(email, (e, d) =>
+        {
+            if(e) 
+                return res.status(500).json({ok:false, err:"Internal error"})
+                //TODO: Log it
+            if (!d)
+                return res.json({ok:false, err:"User not found"})
+            return res.json({ok:true, data:d})
       });
      
     },
     logIn: async function(req, res, next)
     {
+        /** This is a problem in the frontend, a logged one don't need re-log */
+        if(req.cookie && req.cookie.uid)
+            return res.status(400).json({ok:false, err:"Already logged"})
+
+        /** Return exactly what is missing, for debug */
         if(!(req.body))
             return res.status(400).json({ok:false, err:"Missing body"})
         if(!(req.body.password))
-            return res.status(400).json({ok:false, err:"Missing password hash"})
+            return res.status(400).json({ok:false, err:"Missing password"})
         if(!(req.body.email))
             return res.status(400).json({ok:false, err:"Missing email"})
-
-        permanentStorage.getUserByName(req.body.email, async function(e, d)
+        /** Call the Database */
+        permanentStorage.authenticate([req.body.email, req.body.password], async function(e, d)
         {
-            //TODO: Catch errors
-            //if(e)
-            //    console.log(e);
-            if(d)
-            if(d.password == req.body.password)
-            {
-                let cookie = await statusDb.createCookie(d.id);
-                res.status(200).json({ok:true, cookie:cookie})
-            }
+            //TODO: Log the error
+            if(e)
+                return res.status(500).json({ok:false, err:"Internal error"})
+            if(!d)
+                return res.status(302).json({ok:false, err:"User not exist in"})
+            /** Success? Great! Create a cookie and start the session */
+            let cookie = await statusDb.createCookie(d.id);
+            res.status(200).json({ok:true, cookie:cookie})
         })
     },
     getUserInfo: async function(req, res, next) 
@@ -75,22 +132,22 @@ exports.default =
             return res.status(403).json({ok:false, err:"Missing cookie"});
         const cookie = req.cookies.userId;
     
-        /** Check whether there is some kind of suspicius data, like some sql injection attack */
+        /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(cookie) < 0))
             return res.status(403).json({ok:false, err:"Forbidden character"});
+
         statusDb.validateCookie(cookie, async function (e, d)
         {
-
             /** Verify if the uid exists and belong to the authenticated user */
             if(e) return res.status(500).json({ok:false, err:"Internal error"})
             if(!d || !d[0] || !d[0].uid) return res.status(403).json({ok:false, err:"Must be logged to do this"});
-
+            if(sanitize(d[0].uid) < 0) return res.status(403).json({ok:false, err:"Forbidden character"});
+            
             /** If all happens well, return the values */
-            await permanentStorage.getUser(d[0].uid, (e, r) =>{
-                console.log(r)
+            await permanentStorage.getUserPrivateInfo(d[0].uid, (e, r) =>
+            {
                 if(e) return res.status(500).json({ok:false, err:"Internal error"})
                 if(r) return res.status(200).json({ok:true, data:r});
-                return res.status(200).end("Olá")
             });
 
         });
@@ -99,8 +156,10 @@ exports.default =
     {
         if(!req.body)
             return res.json({ok:false, err:"Missing args"});
+        
         let userInfo = baseUser;
         const b = req.body
+
         if(!b.name || !b.age || !b.password || !b.email || !b.metaInfo)
             return res.status(400).json({ok:false, err:"Missing information"});
 
@@ -116,8 +175,11 @@ exports.default =
             return res.status(200).json({ok:true});
         }).catch((e, d) =>
         {
-            //TODO: Handle errors
-            return res.status(500).json({ok:false, err:"Internal server error"});
+            //TODO: Log it
+            if(e == 500)
+                return res.status(500).json({ok:false, err:"Internal server error"});
+            if(e == 400)
+                return res.status(400).json({ok:false, err:"Bad request"});
         });
     }
 }

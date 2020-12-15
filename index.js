@@ -1,26 +1,16 @@
-/*const sqlite3 = require('sqlite3').verbose();
+/**
+ * @brief: Implements the IFSuldesteMG's project for the Ideas For Milk 2020, more at README.MD(soon)
+ * @author: Davidson Souza
+ * @data: December, 2020
+ * @license: MIT
+ */
 
-// open the database connection
-let db = new sqlite3.Database(':memory:');
-
-let languages = ['C++', 'Python', 'Java', 'C#', 'Go'];
-// construct the insert statement with multiple placeholders
-// based on the number of rows
-let placeholders = languages.map((language) => '(?)').join(',');
-let sql = 'INSERT INTO langs(name) VALUES ' + placeholders;
-db.run('CREATE TABLE langs(name text)');
-
-// output the INSERT statement
-console.log(sql);
-
-db.run(sql, languages, function(err) {
-  if (err) {
-    return console.error(err.message);
-  }
-  console.log(`Rows inserted ${this.changes}`);
-});
-
-// close the database connection
-db.close();*/
 const app = require("./app")
-app.listen(8080)
+const config = require("./config.json");
+const port = config.port || 8080;
+const host = config.host || "localhost"
+
+app.listen(port, host, () =>
+{
+  console.log(`Listening to ${port} on ${host}`);
+});

@@ -3,11 +3,13 @@ var router = express.Router();
 var controler = require("../controlers/users").default;
 
 /** Catch a malformed request */
-router.get('/getUserMetaInfo/', controler.missingParam);
+router.get('/', controler.missingParam);
+
 
 /* GET user public information */
-router.get('/getUserMetaInfo/:userId',controler.getUserMetaInfo );
-
+router.get('/getUserById/:userId',controler.getUserMetaInfoById );
+router.get('/getUserByName/:userName', controler.getUserMetaInfoByName)
+router.get('/getUserByEmail/:email', controler.getUserMetaInfoByEmail)
 /* GET user profile info. */
 /* 
   Note: One user can ONLY get information about yourself, for getting cosmetic data about
