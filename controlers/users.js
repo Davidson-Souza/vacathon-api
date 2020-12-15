@@ -153,14 +153,14 @@ exports.default =
 
         });
     },
-    logOut:(req, res, next) =>
+    logOut: async (req, res, next) =>
     {
         if(!(req.cookie && req.cookie.userId))
             return res.status(403).json({ok:false, err:"Missing cookie"})
         
         const cookie = req.cookie.userId;
         
-        if((await sanitize(cookie))< 0)
+        if((await sanitize(cookie)) < 0)
             return res.status(400).json({ok:false, err:"Forbidden character"});
         
         if(statusDb.deleteCookie(cookie))

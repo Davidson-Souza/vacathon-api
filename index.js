@@ -1,7 +1,7 @@
 /**
  * @brief: Implements the IFSuldesteMG's project for the Ideas For Milk 2020, more at README.MD(soon)
  * @author: Davidson Souza
- * @data: December, 2020
+ * @date: December, 2020
  * @license: MIT
  */
 
