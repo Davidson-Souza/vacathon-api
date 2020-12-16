@@ -50,7 +50,7 @@ exports.db =
         {
             return -1;
         }
-        const cookie = sha256d(`cookie${Math.floor(Math.random() * 123123123123123123123)}`);
+        const cookie = await sha256d(`cookie${Math.floor(Math.random() * 123123123123123123123)}`);
         // insert one row into the langs table
         db.run(insetQuery, [uid, cookie], function(err) {
         if (err) {
@@ -68,20 +68,29 @@ exports.db =
         return true;
     },
 
-    lookUpCookie:(c) =>
+    lookUpCookie:(c, next) =>
     {
-        db.run(selectQuery,[c], (e, d) =>
+        db.all(`SELECT uid, cookie FROM cookies WHERE cookie='${c}'`, (e, d) =>
         {
-           /** @todo: Implement callback */
+            if(e != null)
+            {
+                log(e);
+                next(false)
+            }
+            else next(d)
         });
     },
     validateCookie:(c, next) =>
     {
-        db.all(`SELECT cookie, uid FROM cookies WHERE cookie=${c}`, (e, d) =>
+        db.all(`SELECT cookie, uid FROM cookies WHERE cookie='${c}'`, (e, d) =>
         {
             if (e)
+            {
+                log(e)
                 next(e)
-            next(false, d);
+            }
+            else
+                next(false, d);
         })
     }
 };

@@ -9,7 +9,7 @@ const fs = require("fs")
 var file;
 
 if(logConf && logConf.logToFile)
-    file = fs.createWriteStream(logConf.logToFile);
+    file = fs.createWriteStream(logConf.logToFile, {flags:'a'});
 
 function createLog(data, critical = false)
 {

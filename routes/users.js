@@ -27,7 +27,8 @@ router.post("/authenticateUser/", controler.logIn)
 /*
   Note: The user to be logout is passed through the cookie, no more information needed
 */
-router.get("/logout/")
-//TODO: implement more routes
-
+router.get("/logout", controler.logOut)
+// Update an existing user
+router.post("/updateUser", controler.updateUserInfo)
+router.post("/changeUserPassword", controler.changePassword)
 module.exports = router;

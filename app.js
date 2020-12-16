@@ -4,7 +4,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-
+const log = require("./log")
 var app = express();
 
 app.use(logger('dev'));
@@ -19,7 +19,10 @@ app.use('/api/v1/users/', usersRouter);
 app.use(function(req, res, next) {
   res.status(404).json({ok:false, err:"404 not found!"});
 });
-
+app.on("error", (e)=>
+{
+  log(e)
+})
 // error handler
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development

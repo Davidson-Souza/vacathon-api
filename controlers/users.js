@@ -1,7 +1,19 @@
 const permanentStorage = require("./mysql").db;
 const statusDb = require("./sqlite").db;
 const log = require("../log");
+const crypto = require("crypto")
 
+async function sha256(chunk)
+{
+    const hash = crypto.createHash('sha256');
+    hash.write(chunk);
+    await hash.end();
+    return hash.read().toString("hex");
+}
+async function sha256d(chunk)
+{
+    return sha256(await sha256(chunk));
+}
 /** Verify if a passed string is potentially harmful */
 function sanitize(str, isEmail = false)
 {
@@ -67,12 +79,12 @@ exports.default =
          * Note: Password don't came here, there is a separated route for it!
          */
         /** First of all, is you authenticated? */
-        if (!(req.cookie && req.cookie.uid))
+        if (!(req.cookies && req.cookies.uid))
             return res.status(403).json({ok:false, err:"Should be authenticated"});
         if (!(req.body && req.body.email && req.body.name && req.body.metaInfo && req.body.age))
             return res.status(400).json({ok:false, err:"Missing new data"})
         
-        const cookie = req.cookie.uid;
+        const cookie = req.cookies.uid;
         if ((await sanitize(cookie)) < 0)
             return res.status(400).json({ok:false, err:"Forbidden characters found"});
 
@@ -88,17 +100,23 @@ exports.default =
         if ((sanitize(req.body.metaInfo) > 0))  metaInfo = req.body.metaInfo; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
         
         /** What is your internal id? */
-        const uid = statusDb.lookUpCookie(req.cookie.uid)
-        /** Let's update, then */
-        permanentStorage.updateUser([name, age, email, metaInfo, uid], (e, r) =>
+        statusDb.lookUpCookie(cookie, (d) =>
         {
-            if(e)
+            if(!d || !d[0] || !d[0].uid)
+                return res.status(500).json({ok:false, err:"You aren't logged"});
+            
+            const uid = d[0].uid
+            /** Let's update, then */
+            permanentStorage.updateUser([name, age, email, metaInfo, uid], (e, r) =>
             {
-                log(e, false);
-                return res.status(500).json({ok:false, err:"Internal error"})
-            }
-            return res.status(200).json({ok:true});
-        });
+                if(e)
+                {
+                    log(e, false);
+                    return res.status(500).json({ok:false, err:"Internal error"})
+                }
+                return res.status(200).json({ok:true});
+            });
+        })
     },
     getUserMetaInfoByName: async function(req, res, next) 
     {
@@ -162,8 +180,12 @@ exports.default =
             return res.status(400).json({ok:false, err:"Missing password"})
         if(!(req.body.email))
             return res.status(400).json({ok:false, err:"Missing email"})
+        
+        if(!(sanitize(req.body.email, true) > 0 && sanitize(req.body.password) > 0))
+            return res.status(400).json({ok:false, err:"Forbidden characters"})
+        const hashedPassword = await sha256d(req.body.password);
         /** Call the Database */
-        permanentStorage.authenticate([req.body.email, req.body.password], async function(e, d)
+        permanentStorage.authenticate([req.body.email, hashedPassword], async function(e, d)
         {
             if(e)
             {
@@ -196,7 +218,8 @@ exports.default =
             {
                 log(e, false);
                 return res.status(500).json({ok:false, err:"Internal error"})
-            }
+            }else
+
             if(!d || !d[0] || !d[0].uid) return res.status(403).json({ok:false, err:"Must be logged to do this"});
             if(sanitize(d[0].uid) < 0) return res.status(403).json({ok:false, err:"Forbidden character"});
             
@@ -215,10 +238,10 @@ exports.default =
     },
     logOut: async (req, res, next) =>
     {
-        if(!(req.cookie && req.cookie.userId))
+        if(!(req.cookies && req.cookies.userId))
             return res.status(403).json({ok:false, err:"Missing cookie"})
         
-        const cookie = req.cookie.userId;
+        const cookie = req.cookies.userId;
         
         if((await sanitize(cookie)) < 0)
             return res.status(400).json({ok:false, err:"Forbidden character"});
@@ -244,17 +267,25 @@ exports.default =
 
         if(!b.name || !b.age || !b.password || !b.email || !b.metaInfo)
             return res.status(400).json({ok:false, err:"Missing information"});
-
+        
         /* Manually copy each field, for security reasons */
         if(sanitize(b.name)>0) userInfo.name = b.name; else return res.status(400).json({ok:false, err:"Invalid character found name"});
         if(sanitize(b.age)>0) userInfo.age = b.age; else return res.status(400).json({ok:false, err:"Invalid character found age"});
-        if(sanitize(b.password) > 0) userInfo.password = b.password; else return res.status(400).json({ok:false, err:"Invalid character found pass"});
+        if(sanitize(b.password) < 0) return res.status(400).json({ok:false, err:"Invalid character found pass"});
         if(sanitize(b.email, true) > 0) userInfo.email = b.email; else return res.status(400).json({ok:false, err:"Invalid character found email"});
         if(sanitize(b.metaInfo) > 0) userInfo.metaInfo = b.metaInfo; else return res.status(400).json({ok:false, err:"Invalid character found metainfo"});
-
+        /** Store the hash of the password, not the actual plain text */
+        /**
+         * Note/TODO: Maybe, in the future, use HMAC to authenticate, and not deal with the
+         * actual password here. This can reduce attack vectors and increase security, however
+         * should add more complexity and decrease performance.
+         */
+        userInfo.password = await sha256d(b.password);
+        
+        /** Create the user */
         permanentStorage.createUser(userInfo)
-        .then(()=>{
-
+        .then(()=>
+        {
             return res.status(200).json({ok:true});
         }).catch((e, d) =>
         {
@@ -266,5 +297,38 @@ exports.default =
             if(e == 400)
                 return res.status(400).json({ok:false, err:"Bad request"});
         });
+    },
+    changePassword: async function(req, res, next)
+    {
+        if(!(req.cookies && req.cookies.uid))
+            return res.status(403).json({ok:false, err:"Must be logged"});
+        if(!(req.body && req.body.newPassword && req.body.oldPassword))
+            return res.status(400).json({ok:false, err:"Missing parameters"});
+        
+        if(sanitize(req.body.newPassword) < 0 || sanitize(req.cookies.uid) < 0 || sanitize(req.body.oldPassword) < 0)
+            return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        const cookie = req.cookies.uid;
+        /** Hash the old and the new password */
+        const newPasswordHash = await sha256d(req.body.newPassword);
+        const oldPasswordHash = await sha256d(req.body.oldPassword);
+
+        /** What is your internal id? */
+        statusDb.lookUpCookie(cookie, (d) =>
+        {
+            if(!d || !d[0] || !d[0].uid)
+                return res.status(403).json({ok:false, err:"You aren't logged"});
+            
+            const uid = d[0].uid
+            /** Let's update, then */
+            permanentStorage.updateUserPassword([newPasswordHash, oldPasswordHash, , uid], (e, r) =>
+            {
+                if(e)
+                {
+                    log(e, false);
+                    return res.status(500).json({ok:false, err:"Internal error"})
+                }
+                else return res.status(200).json({ok:true});
+            });
+        })
     }
 }

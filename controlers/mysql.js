@@ -68,7 +68,8 @@ exports.db =
           if(err.errno == -111) isWorking = false 
           next(true, err);
         }
-        next(false, result[0])
+        next(false, {ok:true});
+
       });
     },
     getUserPrivateInfoById:(uid, next) =>
@@ -85,6 +86,22 @@ exports.db =
           next(true, err);
         }
         next(false, result[0])
+      });
+    },
+    updateUserPassword: (info, next) =>
+    {
+      if (!isWorking)
+      {
+        startMysql();
+        return next(500, "Mysql isn't work")
+      }
+      db.query("UPDATE profile SET password=? WHERE password=? AND id=?",info, function (err, result, fields) {
+        if (err != null)
+        {
+          if(err.errno == -111) isWorking = false 
+          next(true, err);
+        }
+        else next(false, {ok:true});
       });
     },
     authenticate:(info, next) =>
@@ -138,7 +155,7 @@ exports.db =
           next(false, result[0])
       });
     },
-    createUser:function(u)
+    createUser:function(u, next)
     {
       /** accept, reject (a, r) */
       return new Promise((a, r) =>
@@ -147,19 +164,18 @@ exports.db =
         if (!isWorking)
         {
           startMysql();
-          return next(500, "Mysql isn't work")
+          return r(500, "Mysql isn't work")
         }
 
         /** Double check it, we really don't want to break our database */
         if(!(u && u.name && u.age && u.password && u.email && u.metaInfo))
           r(400, "Missing information");
-
-        db.query("INSERT INTO profile(name, age, password, email, metaInfo) VALUES(?, ?, ?, ?, ?)", [u.name, u.age, u.password, u.email, u.metaInfo], (e, v, f) =>
+        db.query("INSERT INTO profile(name, age, password, email, metaInfo) VALUES(?, ?, ?, ?, ?)", [u.name, u.age, u.password, u.email, u.metaInfo], (err, v, f) =>
         {
           if (err != null)
           {
             if(err.errno == -111) isWorking = false 
-            next(true, err);
+            r(err);
           }
           a()
         });
