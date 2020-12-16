@@ -7,7 +7,7 @@
 const sqlite3 = require("sqlite3")
 const sqliteconf = require("../config.json").sqlite
 const crypto = require("crypto")
-
+const log = require("../log")
 /** Some queries to help */
 const insetQuery = `INSERT INTO cookies(uid, cookie) VALUES(?, ?)`;
 const selectQuery = "SELECT uid, cookie FROM cookies WHERE cookie=?"
@@ -20,10 +20,10 @@ function createDb()
     /** Try to create a new table. If it exists, just skip */
     db.run('CREATE TABLE cookies(uid, cookie)', (e) =>
     {
-        if (e && e.errno == 1) console.log("SQLite3 table already there");
+        if (e && e.errno == 1) log("SQLite3 table already there");
         else
         {
-            console.log("StatusDB is working")
+            log("StatusDB is working")
             isWorking = true;
         }
     });

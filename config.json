@@ -10,5 +10,11 @@
     "sqlite":
     {
         "dbFile":"./tmp/cookies.db"
+    },
+    "logging":
+    {
+        "logToStdout":true,
+        "logToFile":"log.txt"
     }
+
 }

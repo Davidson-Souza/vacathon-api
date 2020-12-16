@@ -4,13 +4,14 @@
  * @date: December, 2020
  * @license: MIT
  */
-
+const log = require("./log")
 const app = require("./app")
 const config = require("./config.json");
 const port = config.port || 8080;
 const host = config.host || "localhost"
 
+log("System startup")
 app.listen(port, host, () =>
 {
-  console.log(`Listening to ${port} on ${host}`);
+  log(`Listening to ${port} on ${host}`);
 });

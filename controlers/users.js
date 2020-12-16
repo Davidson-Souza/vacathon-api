@@ -1,10 +1,15 @@
 const permanentStorage = require("./mysql").db;
 const statusDb = require("./sqlite").db;
+const log = require("../log");
 
 /** Verify if a passed string is potentially harmful */
 function sanitize(str, isEmail = false)
 {
     /** Is empty or too big? */
+    /**
+     * NOTE: 256 is considered to be the greater string allowed in our database, is the double-sha256
+     * of the user's password
+     */
     if (str == null || str == undefined || str.length>256)
         return -1;
     
@@ -46,13 +51,54 @@ exports.default =
         await permanentStorage.getUserById(id, (e, d) =>
         {
             if(e) 
+            {
+                log(e, false);
                 return res.status(500).json({ok:false, err:"Internal error"})
-                //TODO: Log it
+            }
+                
             if (!d)
                 return res.json({ok:false, err:"User not found"})
             return res.json({ok:true, data:d})
       });
-     
+    },
+    updateUserInfo: async function (req, res, next)
+    {
+        /**
+         * Note: Password don't came here, there is a separated route for it!
+         */
+        /** First of all, is you authenticated? */
+        if (!(req.cookie && req.cookie.uid))
+            return res.status(403).json({ok:false, err:"Should be authenticated"});
+        if (!(req.body && req.body.email && req.body.name && req.body.metaInfo && req.body.age))
+            return res.status(400).json({ok:false, err:"Missing new data"})
+        
+        const cookie = req.cookie.uid;
+        if ((await sanitize(cookie)) < 0)
+            return res.status(400).json({ok:false, err:"Forbidden characters found"});
+
+        var email, name, metaInfo, age;
+        /** Verify each field, and copy it */
+        /** 
+         * Note: Why so many verifications? That data will be directly inserted in database, if
+         * anything goes wrong, our database can break, so make sure only the secure information goes in
+         */
+        if ((sanitize(req.body.email, true) > 0)) email = req.body.email; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        if ((sanitize(req.body.age) > 0))  age = req.body.age; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        if ((sanitize(req.body.name) > 0))  name = req.body.name; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        if ((sanitize(req.body.metaInfo) > 0))  metaInfo = req.body.metaInfo; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        
+        /** What is your internal id? */
+        const uid = statusDb.lookUpCookie(req.cookie.uid)
+        /** Let's update, then */
+        permanentStorage.updateUser([name, age, email, metaInfo, uid], (e, r) =>
+        {
+            if(e)
+            {
+                log(e, false);
+                return res.status(500).json({ok:false, err:"Internal error"})
+            }
+            return res.status(200).json({ok:true});
+        });
     },
     getUserMetaInfoByName: async function(req, res, next) 
     {
@@ -68,9 +114,11 @@ exports.default =
         /** Call the mysql to retrieve the data */
         await permanentStorage.getUserByName(name, (e, d) =>
         {
-            if(e) 
+            if(e)
+            {
+                log(e, false);
                 return res.status(500).json({ok:false, err:"Internal error"})
-                //TODO: Log it
+            }
             if (!d)
                 return res.json({ok:false, err:"User not found"})
             return res.json({ok:true, data:d})
@@ -90,9 +138,11 @@ exports.default =
         /** Call the mysql to retrieve the data */
         await permanentStorage.getUserByEmail(email, (e, d) =>
         {
-            if(e) 
+            if(e)
+            {
+                log(e, false);
                 return res.status(500).json({ok:false, err:"Internal error"})
-                //TODO: Log it
+            }
             if (!d)
                 return res.json({ok:false, err:"User not found"})
             return res.json({ok:true, data:d})
@@ -115,9 +165,11 @@ exports.default =
         /** Call the Database */
         permanentStorage.authenticate([req.body.email, req.body.password], async function(e, d)
         {
-            //TODO: Log the error
             if(e)
+            {
+                log(e, false);
                 return res.status(500).json({ok:false, err:"Internal error"})
+            }
             if(!d)
                 return res.status(302).json({ok:false, err:"User not exist in"})
             /** Success? Great! Create a cookie and start the session */
@@ -139,15 +191,23 @@ exports.default =
 
         statusDb.validateCookie(cookie, async function (e, d)
         {
-            /** Verify if the uid exists and belong to the authenticated user */
-            if(e) return res.status(500).json({ok:false, err:"Internal error"})
+            /** Verify if the uid exists and belong to the authenticated user */  
+            if(e)
+            {
+                log(e, false);
+                return res.status(500).json({ok:false, err:"Internal error"})
+            }
             if(!d || !d[0] || !d[0].uid) return res.status(403).json({ok:false, err:"Must be logged to do this"});
             if(sanitize(d[0].uid) < 0) return res.status(403).json({ok:false, err:"Forbidden character"});
             
             /** If all happens well, return the values */
             await permanentStorage.getUserPrivateInfoById(d[0].uid, (e, r) =>
             {
-                if(e) return res.status(500).json({ok:false, err:"Internal error"})
+                if(e)
+                {
+                    log(e, false);
+                    return res.status(500).json({ok:false, err:"Internal error"})
+                }
                 if(r) return res.status(200).json({ok:true, data:r});
             });
 
@@ -166,7 +226,11 @@ exports.default =
         if(statusDb.deleteCookie(cookie))
             return res.status(200).json({ok:true});
         
-        return res.status(500).json({ok:false, err:"Something went wrong"});
+        if(e)
+        {
+            log(e, false);
+            return res.status(500).json({ok:false, err:"Internal error"})
+        }
 
     },
     createUser: async function (req, res, next)
@@ -194,9 +258,11 @@ exports.default =
             return res.status(200).json({ok:true});
         }).catch((e, d) =>
         {
-            //TODO: Log it
-            if(e == 500)
-                return res.status(500).json({ok:false, err:"Internal server error"});
+            if(e)
+            {
+                log(e, false);
+                return res.status(500).json({ok:false, err:"Internal error"})
+            }
             if(e == 400)
                 return res.status(400).json({ok:false, err:"Bad request"});
         });

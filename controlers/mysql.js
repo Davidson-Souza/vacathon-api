@@ -1,11 +1,12 @@
-var mysql = require('mysql');
-var conf = require("../config.json").mysql;
-var db, isWorking = false;
+const mysql = require('mysql');
+const conf = require("../config.json").mysql;
+const log = require("../log");
 
+var db, isWorking = false;
 /** Try connect to Mysql */
 function startMysql()
 {
-  console.log("trying to start Mysql")
+  log("trying to start Mysql")
   db = mysql.createConnection(conf);
   
   db.on("error", (e) =>
@@ -16,16 +17,16 @@ function startMysql()
   try
   {
     db.connect(function(err) {
-      if (err && err.errno == -111) console.log("Mysql is down");
+      if (err && err.errno == -111) log("Mysql is down", true);
       else
       {
-        console.log("Mysql is now connected!");
+        log("Mysql is now connected!");
         isWorking = true; 
       }
     });
   }catch(e)
   {
-    console.log(e)
+    log(e)
   }
 }
 startMysql();
@@ -54,6 +55,22 @@ exports.db =
           next(false, result[0])
         });
     },
+    updateUser:(user, next) =>
+    {
+      if (!isWorking)
+      {
+        startMysql();
+        return next(500, "Mysql isn't work")
+      }
+      db.query("UPDATE profile SET name=?, age=?, email=?, metaInfo=? WHERE id=?",user, function (err, result, fields) {
+        if (err != null)
+        {
+          if(err.errno == -111) isWorking = false 
+          next(true, err);
+        }
+        next(false, result[0])
+      });
+    },
     getUserPrivateInfoById:(uid, next) =>
     {
       if (!isWorking)
@@ -61,7 +78,7 @@ exports.db =
         startMysql();
         return next(500, "Mysql isn't work")
       }
-      db.query("SELECT name, age, password, email, metaInfo FROM profile WHERE id=?",[uid], function (err, result, fields) {
+      db.query("SELECT name, age, email, metaInfo FROM profile WHERE id=?",[uid], function (err, result, fields) {
         if (err != null)
         {
           if(err.errno == -111) isWorking = false 
