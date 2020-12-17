@@ -79,7 +79,7 @@ exports.db =
         startMysql();
         return next(500, "Mysql isn't work")
       }
-      db.query("SELECT name, age, email, metaInfo FROM profile WHERE id=?",[uid], function (err, result, fields) {
+      db.query("SELECT name, id, age, email, metaInfo FROM profile WHERE id=?",[uid], function (err, result, fields) {
         if (err != null)
         {
           if(err.errno == -111) isWorking = false 
