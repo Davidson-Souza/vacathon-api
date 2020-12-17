@@ -10,14 +10,16 @@ router.get('/', controler.missingParam);
 router.get('/getUserById/:userId',controler.getUserMetaInfoById );
 router.get('/getUserByName/:userName', controler.getUserMetaInfoByName)
 router.get('/getUserByEmail/:email', controler.getUserMetaInfoByEmail)
+
 /* GET user profile info. */
 /* 
   Note: One user can ONLY get information about yourself, for getting cosmetic data about
-  anyone else, use get getUserMetaInfo - see docs/routes.md for details
+  anyone else, use get getUserMetaInfo - see docs/routes.md for details. Not password here, there is
+  no reason to return password.
 */
 router.get('/getUserInfo', controler.getUserInfo);
 
-/* Create a new user, aka signup */
+/* Create a new user, a.k.a signup */
 router.post('/createUser/',controler.createUser)
 
 /* Login an user */
@@ -30,5 +32,9 @@ router.post("/authenticateUser/", controler.logIn)
 router.get("/logout", controler.logOut)
 // Update an existing user
 router.post("/updateUser", controler.updateUserInfo)
+// Change the user password, the user should exist and be authenticated.
+/**
+ * Note: The old password is required, for ensuring the ownership of the account
+ */
 router.post("/changeUserPassword", controler.changePassword)
 module.exports = router;
