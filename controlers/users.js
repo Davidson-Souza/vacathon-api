@@ -88,16 +88,16 @@ exports.default =
         if ((await sanitize(cookie)) < 0)
             return res.status(400).json({ok:false, err:"Forbidden characters found"});
 
-        var email, name, metaInfo, age;
+        var email, name, metaInfo, type;
         /** Verify each field, and copy it */
         /** 
-         * Note: Why so many verifications? That data will be directly inserted in database, if
+         * Note: Why so many verifications? That data will be directly inserted in our database, if
          * anything goes wrong, our database can break, so make sure only the secure information goes in
          */
-        if ((sanitize(req.body.email, true) > 0)) email = req.body.email; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
-        if ((sanitize(req.body.age) > 0))  age = req.body.age; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
-        if ((sanitize(req.body.name) > 0))  name = req.body.name; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
-        if ((sanitize(req.body.metaInfo) > 0))  metaInfo = req.body.metaInfo; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        if ((sanitize(req.body.email, true) > 0) && typeof(req.body.email) == "string") email = req.body.email; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        if ((sanitize(req.body.type) > 0) && typeof(req.body.type) == "boolean")  age = req.body.type; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        if ((sanitize(req.body.name) > 0 && typeof(req.body.name) == "string"))  name = req.body.name; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        if ((sanitize(req.body.metaInfo) > 0) && typeof(req.body.metaInfo == "string"))  metaInfo = req.body.metaInfo; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
         
         /** What is your internal id? */
         statusDb.lookUpCookie(cookie, (d) =>
@@ -107,7 +107,7 @@ exports.default =
             
             const uid = d[0].uid
             /** Let's update, then */
-            permanentStorage.updateUser([name, age, email, metaInfo, uid], (e, r) =>
+            permanentStorage.updateUser([name, type, email, metaInfo, uid], (e, r) =>
             {
                 if(e)
                 {
@@ -265,15 +265,16 @@ exports.default =
         let userInfo = baseUser;
         const b = req.body
 
-        if(!b.name || !b.age || !b.password || !b.email || !b.metaInfo)
+        if(!b.name || !b.type || !b.password || !b.email || !b.metaInfo)
             return res.status(400).json({ok:false, err:"Missing information"});
         
         /* Manually copy each field, for security reasons */
-        if(sanitize(b.name)>0) userInfo.name = b.name; else return res.status(400).json({ok:false, err:"Invalid character found name"});
-        if(sanitize(b.age)>0) userInfo.age = b.age; else return res.status(400).json({ok:false, err:"Invalid character found age"});
-        if(sanitize(b.password) < 0) return res.status(400).json({ok:false, err:"Invalid character found pass"});
-        if(sanitize(b.email, true) > 0) userInfo.email = b.email; else return res.status(400).json({ok:false, err:"Invalid character found email"});
-        if(sanitize(b.metaInfo) > 0) userInfo.metaInfo = b.metaInfo; else return res.status(400).json({ok:false, err:"Invalid character found metainfo"});
+        if(sanitize(b.name)>0          && typeof(b.name) == "string") userInfo.name = b.name; else return res.status(400).json({ok:false, err:"Invalid character found name"});
+        if(sanitize(b.type)>0          && typeof(b.type) == "boolean") userInfo.age = b.age; else return res.status(400).json({ok:false, err:"Invalid character found age"});
+        if(sanitize(b.password         && typeof(b.password) == "string") < 0) return res.status(400).json({ok:false, err:"Invalid character found pass"});
+        if(sanitize(b.email, true) > 0 && typeof(b.email) == "string") userInfo.email = b.email; else return res.status(400).json({ok:false, err:"Invalid character found email"});
+        if(sanitize(b.metaInfo) > 0    && typeof(b.metaInfo) == "string") userInfo.metaInfo = b.metaInfo; else return res.status(400).json({ok:false, err:"Invalid character found metainfo"});
+        
         /** Store the hash of the password, not the actual plain text */
         /**
          * Note/TODO: Maybe, in the future, use HMAC to authenticate, and not deal with the

@@ -79,7 +79,7 @@ exports.db =
         startMysql();
         return next(500, "Mysql isn't work")
       }
-      db.query("SELECT name, id, age, email, metaInfo FROM profile WHERE id=?",[uid], function (err, result, fields) {
+      db.query("SELECT name, id, type, email, metaInfo FROM profile WHERE id=?",[uid], function (err, result, fields) {
         if (err != null)
         {
           if(err.errno == -111) isWorking = false 
@@ -128,7 +128,7 @@ exports.db =
         startMysql();
         return next(500, "Mysql isn't work")
       }
-      db.query("SELECT name, metaInfo FROM profile WHERE email=?",[email], function (err, result, fields) {
+      db.query("SELECT name, type, metaInfo FROM profile WHERE email=?",[email], function (err, result, fields) {
         if (err != null)
         {
           if(err.errno == -111) isWorking = false 
@@ -145,7 +145,7 @@ exports.db =
         startMysql();
         return next(500, "Mysql isn't work")
       }
-      db.query("SELECT name, metaInfo FROM profile WHERE name=?",[name], function (err, result, fields) {
+      db.query("SELECT name, type, metaInfo FROM profile WHERE name=?",[name], function (err, result, fields) {
         if (err != null)
         {
           if(err.errno == -111) isWorking = false 
@@ -170,7 +170,7 @@ exports.db =
         /** Double check it, we really don't want to break our database */
         if(!(u && u.name && u.age && u.password && u.email && u.metaInfo))
           r(400, "Missing information");
-        db.query("INSERT INTO profile(name, age, password, email, metaInfo) VALUES(?, ?, ?, ?, ?)", [u.name, u.age, u.password, u.email, u.metaInfo], (err, v, f) =>
+        db.query("INSERT INTO profile(name, type, password, email, metaInfo) VALUES(?, ?, ?, ?, ?)", [u.name, u.age, u.password, u.email, u.metaInfo], (err, v, f) =>
         {
           if (err != null)
           {
