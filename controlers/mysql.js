@@ -62,7 +62,7 @@ exports.db =
         startMysql();
         return next(500, "Mysql isn't work")
       }
-      db.query("UPDATE profile SET name=?, age=?, email=?, metaInfo=? WHERE id=?",user, function (err, result, fields) {
+      db.query("UPDATE profile SET name=?, type=?, email=?, metaInfo=? WHERE id=?",user, function (err, result, fields) {
         if (err != null)
         {
           if(err.errno == -111) isWorking = false 
@@ -168,9 +168,9 @@ exports.db =
         }
 
         /** Double check it, we really don't want to break our database */
-        if(!(u && u.name && u.age && u.password && u.email && u.metaInfo))
+        if(!(u && u.name && u.type && u.password && u.email && u.metaInfo))
           r(400, "Missing information");
-        db.query("INSERT INTO profile(name, type, password, email, metaInfo) VALUES(?, ?, ?, ?, ?)", [u.name, u.age, u.password, u.email, u.metaInfo], (err, v, f) =>
+        db.query("INSERT INTO profile(name, type, password, email, metaInfo) VALUES(?, ?, ?, ?, ?)", [u.name, u.type, u.password, u.email, u.metaInfo], (err, v, f) =>
         {
           if (err != null)
           {

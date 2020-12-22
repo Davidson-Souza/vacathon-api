@@ -40,7 +40,7 @@ function sanitize(str, isEmail = false)
 /** How a user should looks like */
 const baseUser = 
 {
-    name:0, age:0, password:0, email:0, metaInfo:0
+    name:0, type:0, password:0, email:0, metaInfo:0
 }
 exports.default = 
 {
@@ -81,7 +81,7 @@ exports.default =
         /** First of all, is you authenticated? */
         if (!(req.cookies && req.cookies.uid))
             return res.status(403).json({ok:false, err:"Should be authenticated"});
-        if (!(req.body && req.body.email && req.body.name && req.body.metaInfo && req.body.age))
+        if (!(req.body && req.body.email && req.body.name && req.body.metaInfo && req.body.type))
             return res.status(400).json({ok:false, err:"Missing new data"})
         
         const cookie = req.cookies.uid;
@@ -95,7 +95,8 @@ exports.default =
          * anything goes wrong, our database can break, so make sure only the secure information goes in
          */
         if ((sanitize(req.body.email, true) > 0) && typeof(req.body.email) == "string") email = req.body.email; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
-        if ((sanitize(req.body.type) > 0) && typeof(req.body.type) == "boolean")  age = req.body.type; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        /** Booleans don't have characters */
+        if (typeof(req.body.type) == "boolean")  type = req.body.type; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
         if ((sanitize(req.body.name) > 0 && typeof(req.body.name) == "string"))  name = req.body.name; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
         if ((sanitize(req.body.metaInfo) > 0) && typeof(req.body.metaInfo == "string"))  metaInfo = req.body.metaInfo; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
         
@@ -125,7 +126,7 @@ exports.default =
         if(!req.params || !req.params.userName)
             return res.status(403).json({ok:false, err:"Missing arguments"})
         const name = req.params.userName
-        /** Check whether there is some kind of suspicius data, like some sql injection attack */
+        /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(name) < 0))
             return res.status(403).json({ok:false, err:"Forbidden character failed"});
       
@@ -270,17 +271,12 @@ exports.default =
         
         /* Manually copy each field, for security reasons */
         if(sanitize(b.name)>0          && typeof(b.name) == "string") userInfo.name = b.name; else return res.status(400).json({ok:false, err:"Invalid character found name"});
-        if(sanitize(b.type)>0          && typeof(b.type) == "boolean") userInfo.age = b.age; else return res.status(400).json({ok:false, err:"Invalid character found age"});
+        if(/* Not sanitize bool */        typeof(b.type) == "boolean") userInfo.type = b.type; else return res.status(400).json({ok:false, err:"Invalid character found type"});
         if(sanitize(b.password         && typeof(b.password) == "string") < 0) return res.status(400).json({ok:false, err:"Invalid character found pass"});
         if(sanitize(b.email, true) > 0 && typeof(b.email) == "string") userInfo.email = b.email; else return res.status(400).json({ok:false, err:"Invalid character found email"});
         if(sanitize(b.metaInfo) > 0    && typeof(b.metaInfo) == "string") userInfo.metaInfo = b.metaInfo; else return res.status(400).json({ok:false, err:"Invalid character found metainfo"});
         
         /** Store the hash of the password, not the actual plain text */
-        /**
-         * Note/TODO: Maybe, in the future, use HMAC to authenticate, and not deal with the
-         * actual password here. This can reduce attack vectors and increase security, however
-         * should add more complexity and decrease performance.
-         */
         userInfo.password = await sha256d(b.password);
         
         /** Create the user */
