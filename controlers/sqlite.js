@@ -61,9 +61,10 @@ exports.db =
     },
     deleteCookie: (c) =>
     {
-        db.run(`DELETE FROM cookies WHERE cookie=${c}`, (e, r) =>
+        db.run(`DELETE FROM cookies WHERE cookie=?`,[c], (e, r) =>
         {
-            if(e) return e;
+           
+            if(e) log (e, true);
         })
         return true;
     },

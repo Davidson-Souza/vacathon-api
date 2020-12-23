@@ -27,3 +27,12 @@ app.listen(port, host, () =>
 {
   log(`Listening to ${port} on ${host}`);
 });
+
+/**PATCH submeter leitura
+ * get getDadosLeitura
+ * get getLeitura
+ * head getHeaderLeitura
+ * put createrealationship
+ * delete delete relationship
+ * get logiscaLaticinios
+ */

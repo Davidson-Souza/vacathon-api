@@ -265,8 +265,8 @@ exports.default =
         
         let userInfo = baseUser;
         const b = req.body
-
-        if(!b.name || !b.type || !b.password || !b.email || !b.metaInfo)
+        console.log(b)
+        if(!b.name || b.type==undefined || !b.password || !b.email || !b.metaInfo)
             return res.status(400).json({ok:false, err:"Missing information"});
         
         /* Manually copy each field, for security reasons */
@@ -294,6 +294,40 @@ exports.default =
             if(e == 400)
                 return res.status(400).json({ok:false, err:"Bad request"});
         });
+    },
+    deleteUser: async function (req, res, netx)
+    {
+        /**
+         * Delete an user from database. This operation is irreversible!
+         */
+        /** First of all, is you authenticated? */
+        if (!(req.cookies && req.cookies.userId))
+            return res.status(403).json({ok:false, err:"Should be authenticated"});
+        
+        const cookie = req.cookies.userId;
+        if ((await sanitize(cookie)) < 0)
+            return res.status(400).json({ok:false, err:"Forbidden characters found"});
+
+         /** What is your internal id? */
+        statusDb.lookUpCookie(cookie, (d) =>
+        {
+            if(!d || !d[0] || !d[0].uid)
+                return res.status(500).json({ok:false, err:"You aren't logged"});
+            console.log(d);
+            /** Logoff */
+            statusDb.deleteCookie(c);
+            const uid = d[0].uid
+            /** Let's delete, then */
+            permanentStorage.deleteUser(uid, (e, r) =>
+            {
+                if(e)
+                {
+                    log(e, false);
+                    return res.status(500).json({ok:false, err:"Internal error"})
+                }
+                return res.status(200).json({ok:true});
+            });
+        })
     },
     changePassword: async function(req, res, next)
     {

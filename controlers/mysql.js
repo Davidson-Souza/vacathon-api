@@ -155,6 +155,24 @@ exports.db =
           next(false, result[0])
       });
     },
+    deleteUser:function(u, next)
+    {
+      if (!isWorking)
+      {
+        startMysql();
+        return next(500, "Mysql isn't work")
+      }
+      db.query("DELETE FROM `profile` WHERE `profile`.`id` = ?",u, function (err, result, fields) {
+        if (err != null)
+        {
+          if(err.errno == -111) isWorking = false 
+          next(err, err);
+        }
+        else
+          next(false, {ok:true});
+
+      });
+    },
     createUser:function(u, next)
     {
       /** accept, reject (a, r) */
@@ -168,7 +186,7 @@ exports.db =
         }
 
         /** Double check it, we really don't want to break our database */
-        if(!(u && u.name && u.type && u.password && u.email && u.metaInfo))
+        if(!(u && u.name && !(u.type == undefined) && u.password && u.email && u.metaInfo))
           r(400, "Missing information");
         db.query("INSERT INTO profile(name, type, password, email, metaInfo) VALUES(?, ?, ?, ?, ?)", [u.name, u.type, u.password, u.email, u.metaInfo], (err, v, f) =>
         {

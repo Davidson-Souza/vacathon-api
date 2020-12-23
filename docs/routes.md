@@ -14,5 +14,5 @@ GET: <b>logout</b>: Destroys the current session. Require the cookie of the sess
 error, the cookie will be revoked, hence, a new authentication shall be taken  
 POST: <b>updateUser</b>: Update the user info, no password here. Need one json with the new info, unchanged data
 shall be repeated. Ex {"name": "example", "email": "example@example.com", "type":false, "metaInfo":"something"}. Return true if everything went well.
-POST: <b>changeUserPassword</b>. Change the user password. Need a json with: oldPassword and newPassword, as well 
-the cookie. Return true if no errors happens.  
+POST: <b>changeUserPassword</b>. Change the user password. Need a json with: oldPassword and newPassword, as well the cookie. Return true if no errors happens.  
+DELETE: <b>deleteUser</b>. Dele an existing user, should be authenticated. Require only the cookie  

@@ -37,4 +37,9 @@ router.post("/updateUser", controler.updateUserInfo)
  * Note: The old password is required, for ensuring the ownership of the account
  */
 router.post("/changeUserPassword", controler.changePassword)
+// Delete an user from the system
+/**
+ * Note: This is irreversible!
+ */
+router.delete("/deleteUser", controler.deleteUser);
 module.exports = router;
