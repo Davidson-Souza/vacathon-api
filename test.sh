@@ -30,15 +30,30 @@ then
 fi
 
 echo "Geting user informations"
-curl $baseUrl/api/v1/users/getUserInfo -H "Cookie: userId=$cookie" --silent | jq ".ok"
+res=$(curl $baseUrl/api/v1/users/getUserInfo -H "Cookie: userId=$cookie" --silent | jq ".ok")
+if [ $res = "null" ]
+then 
+    echo "Error: Get user info"
+    exit
+fi
+
 echo "Logout"
-curl $baseUrl/api/v1/users/logout -H "Cookie: userId=$cookie" --silent | jq ".ok"
+res=$(curl $baseUrl/api/v1/users/logout -H "Cookie: userId=$cookie" --silent | jq ".ok")
+if [ $res = "null" ]
+then 
+    echo "Error: Logout"
+    exit
+fi
     
 echo "Deleting the user"
 # Authenticate again
 cookie=$(curl -X POST -H "$contType" -d "$authUser" --silent  $baseUrl/api/v1/users/authenticateUser | jq ".cookie") 
 # Delete the user
 
-curl -X DELETE $baseUrl/api/v1/users/deleteUser -H "Cookie: userId=$cookie" --silent | jq ".ok"
+res=$(curl -X DELETE $baseUrl/api/v1/users/deleteUser -H "Cookie: userId=$cookie" --silent | jq ".ok")
+if [ $res = "null" ]
+then 
+    echo "Error: delting user"
+    exit
+fi
 echo "Finished!"
-
