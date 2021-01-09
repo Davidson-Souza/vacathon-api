@@ -331,7 +331,7 @@ exports.default =
                 return res.status(500).json({ok:false, err:"You aren't logged"});
             console.log(d);
             /** Logoff */
-            statusDb.deleteCookie(c);
+            statusDb.deleteCookie(cookie);
             const uid = d[0].uid
             /** Let's delete, then */
             permanentStorage.deleteUser(uid, (e, r) =>
