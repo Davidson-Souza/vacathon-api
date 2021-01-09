@@ -56,7 +56,7 @@ exports.default =
             log("users::isAuthenticated: Missing callback", true);
             return ;
         }
-        statusDb.lookUpCookie(c, (d) =>
+        statusDb.lookUpCookie(cookie, (d) =>
         {
             if(!d || !d[0] || !d[0].uid)
                 callback(false);
