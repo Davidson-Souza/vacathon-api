@@ -1,42 +1,8 @@
 const permanentStorage = require("./mysql").db;
 const statusDb = require("./sqlite").db;
 const log = require("../log");
-const crypto = require("crypto")
-
-async function sha256(chunk)
-{
-    const hash = crypto.createHash('sha256');
-    hash.write(chunk);
-    await hash.end();
-    return hash.read().toString("hex");
-}
-async function sha256d(chunk)
-{
-    return sha256(await sha256(chunk));
-}
-/** Verify if a passed string is potentially harmful */
-function sanitize(str, isEmail = false)
-{
-    /** Is empty or too big? */
-    /**
-     * NOTE: 256 is considered to be the greater string allowed in our database, is the double-sha256
-     * of the user's password
-     */
-    if (str == null || str == undefined || str.length>256)
-        return -1;
-    
-    let c = "";
-    /** Shouldn't have any non-alphanumeric digit (except emails) */
-    for (let i = 0; i<str.length; i++)
-    {
-        c = str.charAt(i);
-        if((c < '0' || c > 'z') && !isEmail)
-            return -1;
-        else if(((c < '0' || c > 'z') && (c !="." && c !="@")) && isEmail)
-            return -1;   
-    }
-    return 1;
-}
+const utilities = require("../utilities")
+const sanitize = utilities
 /** How a user should looks like */
 const baseUser = 
 {
@@ -74,7 +40,7 @@ exports.default =
         /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(id) < 0))
             return res.status(403).json({ok:false, err:"Forbidden character failed"});
-      
+
         /** Call the mysql to retrieve the data */
         await permanentStorage.getUserById(id, (e, d) =>
         {
@@ -271,7 +237,6 @@ exports.default =
             log(e, false);
             return res.status(500).json({ok:false, err:"Internal error"})
         }
-
     },
     createUser: async function (req, res, next)
     {
