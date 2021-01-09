@@ -197,7 +197,7 @@ exports.default =
     
         /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(cookie) < 0))
-            return res.status(403).json({ok:false, err:"Forbidden character"});
+            return res.status(400).json({ok:false, err:"Forbidden character"});
 
         statusDb.validateCookie(cookie, async function (e, d)
         {
@@ -226,10 +226,10 @@ exports.default =
     },
     logOut: async (req, res, next) =>
     {
-        if(!(req.cookies && req.cookies.userId))
+        if(!(req.cookies && req.cookies.uid))
             return res.status(403).json({ok:false, err:"Missing cookie"})
         
-        const cookie = req.cookies.userId;
+        const cookie = req.cookies.uid;
         
         if((await sanitize(cookie)) < 0)
             return res.status(400).json({ok:false, err:"Forbidden character"});

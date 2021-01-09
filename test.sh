@@ -36,9 +36,8 @@ then
     echo "Error: Get user info"
     exit
 fi
-
 echo "Logout"
-res=$(curl $baseUrl/api/v1/users/logout -H "Cookie: userId=$cookie" --silent | jq ".ok")
+res=$(curl $baseUrl/api/v1/users/logout -H "Cookie: uid=$cookie" --silent | jq ".ok")
 if [ $res = "null" ]
 then 
     echo "Error: Logout"
