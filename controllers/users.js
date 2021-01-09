@@ -1,8 +1,9 @@
 const permanentStorage = require("./mysql").db;
 const statusDb = require("./sqlite").db;
 const log = require("../log");
-const utilities = require("../utilities")
-const sanitize = utilities
+const utilities = require("../utilities").default
+const sanitize = utilities.sanitize
+const sha256d = utilities.sha256d
 /** How a user should looks like */
 const baseUser = 
 {
@@ -76,7 +77,7 @@ exports.default =
          * Note: Why so many verifications? That data will be directly inserted in our database, if
          * anything goes wrong, our database can break, so make sure only the secure information goes in
          */
-        if ((sanitize(req.body.email, true) > 0) && typeof(req.body.email) == "string") email = req.body.email; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
+        if ((sanitize(req.body.email) > 0) && typeof(req.body.email) == "string") email = req.body.email; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
         /** Booleans don't have characters */
         if (typeof(req.body.type) == "boolean")  type = req.body.type; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
         if ((sanitize(req.body.name) > 0 && typeof(req.body.name) == "string"))  name = req.body.name; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
@@ -132,8 +133,8 @@ exports.default =
         if(!req.params || !req.params.email)
             return res.status(403).json({ok:false, err:"Missing arguments"})
         const email = req.params.email
-        /** Check whether there is some kind of suspicius data, like some sql injection attack */
-        if ((await sanitize(email, true) < 0))
+        /** Check whether there is some kind of sus data, like some sql injection attack */
+        if ((await sanitize(email) < 0))
             return res.status(403).json({ok:false, err:"Forbidden character failed"});
       
         /** Call the mysql to retrieve the data */
@@ -164,7 +165,7 @@ exports.default =
         if(!(req.body.email))
             return res.status(400).json({ok:false, err:"Missing email"})
         
-        if(!(sanitize(req.body.email, true) > 0 && sanitize(req.body.password) > 0))
+        if(!(sanitize(req.body.email) > 0 && sanitize(req.body.password) > 0))
             return res.status(400).json({ok:false, err:"Forbidden characters"})
         const hashedPassword = await sha256d(req.body.password);
         /** Call the Database */

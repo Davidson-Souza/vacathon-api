@@ -7,8 +7,7 @@
 const log = require("./log")
 const app = require("./app")
 const config = require("./config.json");
-const port = process.env.PORT;
-
+const port = process.env.PORT | 8080;
 /** Catch errors, don't break */
 process.on("uncaughtException", (e) =>
 {
@@ -24,5 +23,5 @@ log("System startup");
 /**Listen to the API port */
 app.listen(port, () =>
 {
-  log(`Listening to ${port} on ${host}`);
+  log(`Listening to ${port}`);
 });
