@@ -4,8 +4,8 @@
 echo "Starting some useful tests"
 baseUrl="localhost:8080"
 contType="Content-Type: application/json"
-authUser='{"name": "linuxize", "email": "example@example.com", "type":12, "password":"2321", "metaInfo":"something"}'
-createUser='{"name": "example", "email": "example@example.com", "type":false, "password":"2321", "metaInfo":"something"}'
+authUser='{"email": "example@example.com", "type":12, "password":"2321", "metaInfo":"something"}'
+createUser='{"name": "linux Is Life", "email": "example@example.com", "type":false, "password":"2321", "metaInfo":"something"}'
 
 # Create a new user
 echo "Trying create a new user"
