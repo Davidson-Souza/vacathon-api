@@ -178,7 +178,7 @@ exports.db =
         next(false, result[0])
     });
   },
-  deleteUser:function(u, next)
+  deleteUser:(u, next) =>
   {
     if (!isWorking)
     {
@@ -196,7 +196,7 @@ exports.db =
 
     });
   },
-  createUser:function(u, next)
+  createUser:(u, next) =>
   {
     /** accept, reject (a, r) */
     return new Promise((a, r) =>
