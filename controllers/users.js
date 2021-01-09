@@ -48,6 +48,22 @@ exports.default =
     {
       return res.status(403).json({ok:false, err:"Missing id param"})
     },
+    /** Used internally */
+    isAuthenticated: (cookie, callback) =>
+    {
+        if(!cookie || !callback)
+        {
+            log("users::isAuthenticated: Missing callback", true);
+            return ;
+        }
+        statusDb.lookUpCookie(c, (d) =>
+        {
+            if(!d || !d[0] || !d[0].uid)
+                callback(false);
+            /**If the user is authenticated return it's session information */
+            callback(d);
+        });
+    },
     getUserMetaInfoById: async function(req, res, next) 
     {
         // This probably will never happens, thanks to the fallback above.

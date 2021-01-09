@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-var controler = require("../controlers/users").default;
+var controler = require("../controllers/users").default;
 
 /** Catch a malformed request */
 router.get('/', controler.missingParam);

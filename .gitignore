@@ -2,4 +2,5 @@ package-lock.json
 node_modules/
 tmp/*
 log.txt
-test.js
+test.*
+uploads/*
