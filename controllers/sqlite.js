@@ -11,24 +11,29 @@ const log = require("../log")
 /** Some queries to help */
 const insetQuery = `INSERT INTO cookies(uid, cookie) VALUES(?, ?)`;
 const selectQuery = "SELECT uid, cookie FROM cookies WHERE cookie=?"
+
 /** An instance of the SQLite module */
 var db, isWorking = false;
-function createDb()
+(function createDb()
 {
     db = new sqlite3.Database(sqliteconf.dbFile);
 
     /** Try to create a new table. If it exists, just skip */
     db.run('CREATE TABLE cookies(uid, cookie)', (e) =>
     {
-        if (e && e.errno == 1) log("SQLite3 table already there");
+        if (e && e.errno == 1) 
+        {
+            log("SQLite3 table already there");
+            isWorking = true;
+        }
         else
         {
             log("StatusDB is working")
             isWorking = true;
         }
     });
-}
-createDb();
+})()
+
 async function sha256(chunk)
 {
     const hash = crypto.createHash('sha256');
@@ -46,8 +51,10 @@ exports.db =
 {
     createCookie:async (uid) =>
     {
-        if (isWorking)
+        if (!isWorking)
         {
+            log("Sqlite isn't working", false)
+
             return -1;
         }
         const cookie = await sha256d(`cookie${Math.floor(Math.random() * 123123123123123123123)}`);
