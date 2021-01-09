@@ -7,8 +7,7 @@
 const log = require("./log")
 const app = require("./app")
 const config = require("./config.json");
-const port = config.port || 8080;
-const host = config.host || "localhost"
+const port = process.env.PORT;
 
 /** Catch errors, don't break */
 process.on("uncaughtException", (e) =>
@@ -23,16 +22,7 @@ process.on("unhandledRejection", (e) =>
 log("System startup");
 
 /**Listen to the API port */
-app.listen(port, host, () =>
+app.listen(port, () =>
 {
   log(`Listening to ${port} on ${host}`);
 });
-
-/**PATCH submeter leitura
- * get getDadosLeitura
- * get getLeitura
- * head getHeaderLeitura
- * put createrealationship
- * delete delete relationship
- * get logiscaLaticinios
- */
