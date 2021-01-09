@@ -281,7 +281,7 @@ exports.default =
         
         let userInfo = baseUser;
         const b = req.body
-        console.log(b)
+    
         if(!b.name || b.type==undefined || !b.password || !b.email || !b.metaInfo)
             return res.status(400).json({ok:false, err:"Missing information"});
         
@@ -329,7 +329,6 @@ exports.default =
         {
             if(!d || !d[0] || !d[0].uid)
                 return res.status(500).json({ok:false, err:"You aren't logged"});
-            console.log(d);
             /** Logoff */
             statusDb.deleteCookie(cookie);
             const uid = d[0].uid
