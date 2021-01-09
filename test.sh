@@ -30,7 +30,7 @@ then
 fi
 
 echo "Geting user informations"
-res=$(curl $baseUrl/api/v1/users/getUserInfo -H "Cookie: userId=$cookie" --silent | jq ".ok")
+res=$(curl $baseUrl/api/v1/users/getUserInfo -H "Cookie: uid=$cookie" --silent | jq ".ok")
 if [ $res = "null" ]
 then 
     echo "Error: Get user info"

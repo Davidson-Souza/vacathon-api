@@ -15,6 +15,11 @@ exports.default =
     {
       return res.status(403).json({ok:false, err:"Missing id param"})
     },
+    uploadProfileImage:(req, res, next) =>
+    {
+        if(!(req.file && req.cookies && req.cookies.uid && req.files.profileImg))
+            return res.status(400).json({ok:false, err:"Missing information"})
+    },
     /** Used internally */
     isAuthenticated: (cookie, callback) =>
     {
@@ -185,11 +190,10 @@ exports.default =
     },
     getUserInfo: async function(req, res, next) 
     {
-
         /** This request is only possible for logged ones */
-        if (!(req.cookies && req.cookies.userId))
+        if (!(req.cookies && req.cookies.uid))
             return res.status(403).json({ok:false, err:"Missing cookie"});
-        const cookie = req.cookies.userId;
+        const cookie = req.cookies.uid;
     
         /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(cookie) < 0))
