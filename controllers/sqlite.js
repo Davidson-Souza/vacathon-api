@@ -131,6 +131,7 @@ exports.db =
         });
         next(false, code);
     },
+<<<<<<< HEAD
     verifyCode: async(code) =>
     {
         return new Promise((accept, reject) =>
@@ -138,13 +139,26 @@ exports.db =
             if(!(code))
                 reject("missing data");
             db.all(`SELECT * FROM verCodes WHERE code='${code}'`, (e, d) =>
+=======
+    verifyCode: async(uid, code) =>
+    {
+        return new Promise((accept, reject) =>
+        {
+            if(!(uid && code))
+                reject("missing data");
+            db.all(`SELECT * FROM verCodes WHERE uid=${uid}`, (e, d) =>
+>>>>>>> 2186e6375bde5709deded6d7080683cae9661ed1
             {
                 if(e != null)
                 {
                     log(e);
                     reject(e)
                 }
+<<<<<<< HEAD
                 else if (d.length > 0) accept(d[0]);
+=======
+                else if (d.length > 0) accept(uid == d[0].uid ? true : false);
+>>>>>>> 2186e6375bde5709deded6d7080683cae9661ed1
                 else accept(false);
             });
         })
