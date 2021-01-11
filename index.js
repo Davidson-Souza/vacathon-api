@@ -19,7 +19,7 @@ process.on("unhandledRejection", (e) =>
 });
 /**Let's log the time of startup */
 log("System startup");
-
+log(`Trying bind to ${port}`)
 /**Listen to the API port */
 app.listen(port, () =>
 {
