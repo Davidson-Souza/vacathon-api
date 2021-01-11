@@ -1,5 +1,5 @@
 {
-    "host":"localhost",
+    "host":"https://61b7952a05bf.ngrok.io",
     "mysql":
     {
         "host": "localhost",
@@ -15,6 +15,10 @@
     {
         "logToStdout":true,
         "logToFile":"log.txt"
+    },
+    "mail":
+    {
+        "from":""
     }
 
 }

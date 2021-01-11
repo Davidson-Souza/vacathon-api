@@ -1,9 +1,11 @@
 const permanentStorage = require("./mysql").db;
 const statusDb = require("./sqlite").db;
 const log = require("../log");
+const mail = require("./mail").default;
 const utilities = require("../utilities").default
 const sanitize = utilities.sanitize
 const sha256d = utilities.sha256d
+const configs = require("../config.json");
 /** How a user should looks like */
 const baseUser = 
 {
@@ -11,7 +13,7 @@ const baseUser =
 }
 exports.default = 
 {
-    missingParam: async function(req, res, next) 
+    missingParam: async (req, res, next) => 
     {
       return res.status(403).json({ok:false, err:"Missing id param"})
     },
@@ -37,7 +39,60 @@ exports.default =
             });
         });
     },
+    requestConfirmationCode: async (req, res, next) =>
+    {
+        /** This request is only possible for logged ones */
+        if (!(req.cookies && req.cookies.uid))
+            return res.status(403).json({ok:false, err:"Missing cookie"});
+        const cookie = req.cookies.uid;
     
+        /** Check whether there is some kind of sus data, like some sql injection attack */
+        if ((await sanitize(cookie) < 0))
+            return res.status(400).json({ok:false, err:"Forbidden character"});
+
+        statusDb.validateCookie(cookie, async function (e, d)
+        {
+            /** Verify if the uid exists and belong to the authenticated user */  
+            if(e)
+            {
+                log(e, false);
+                return res.status(500).json({ok:false, err:"Internal error"})
+            }else
+
+            if(!d || !d[0] || !d[0].uid) return res.status(403).json({ok:false, err:"Must be logged to do this"});
+            if(sanitize(d[0].uid) < 0) return res.status(403).json({ok:false, err:"Forbidden character"});
+            
+            /** If all happens well, return the values */
+            permanentStorage.getUserPrivateInfoById(d[0].uid, (e, r) =>
+            {                
+                if(e)
+                {
+                    log(e, false);
+                    return res.status(500).json({ok:false, err:"Internal error"})
+                }
+                if(r)
+                    statusDb.createVerificationCode(d[0].uid, (err, data) =>
+                    {
+                        if(!err)
+                        {
+                            mail.sendMail(
+                                {
+                                    to: r.email.replace("'", "").replace("'", ""),
+                                    from: configs.mail.from, 
+                                    subject: 'Código de confirmação',
+                                    text: `Este é o seu código de confirmação para a aplicação ${data}`,
+                                    html: `Clique <a href="${configs.host}/api/v1/users/verifyCode/${data}">aqui </a> para validar o seu email`,
+                                }, (err) =>
+                                {
+                                    if(err) return res.status(500).json({ok:false, err:"Internal error"});
+                                    else return res.status(200).json({ok:true});
+                                });
+                        };
+                    })
+            });
+
+        });
+    },
     /** Used internally */
     isAuthenticated: (cookie, callback) =>
     {
@@ -54,7 +109,31 @@ exports.default =
             callback(d);
         });
     },
-    getUserMetaInfoById: async function(req, res, next) 
+    verifyCode: (req, res, next) =>
+    {
+        const code = req.params.code;
+
+        if(sanitize(code) < 0)
+            return res.status(400).json({ok:false, err:"Forbidden character"});
+
+        statusDb.verifyCode(code)
+            .then( r =>
+            {
+                if(!r)
+                    return res.status(403).json({ok:false, err:"Wrong code"});
+                permanentStorage.updateVerificationStatus(r.uid, (err) =>
+                {
+                    if(err) return res.status(500).json({ok:false, err:"Internal error"});
+                    else  return res.status(200).json({ok:true});
+                })
+            })
+            .catch((err) => 
+            {
+                log(err);
+                return res.status(500).json({ok:false, err:"Internal error"});  
+            })
+    },
+    getUserMetaInfoById: async (req, res, next) => 
     {
         // This probably will never happens, thanks to the fallback above.
         // But... Who knows? It's better just prevent...
@@ -79,7 +158,7 @@ exports.default =
             return res.json({ok:true, data:d})
       });
     },
-    updateUserInfo: async function (req, res, next)
+    updateUserInfo: async (req, res, next) =>
     {
         /**
          * Note: Password don't came here, there is a separated route for it!
@@ -125,7 +204,7 @@ exports.default =
             });
         })
     },
-    getUserMetaInfoByName: async function(req, res, next) 
+    getUserMetaInfoByName: async (req, res, next)=> 
     {
         // This probably will never happens, thanks to the fallback above.
         // But... Who knows? It's better just prevent...
@@ -149,7 +228,7 @@ exports.default =
             return res.json({ok:true, data:d})
       });
     },
-    getUserMetaInfoByEmail: async function(req, res, next) 
+    getUserMetaInfoByEmail: async(req, res, next) =>
     {
         // This probably will never happens, thanks to the fallback above.
         // But... Who knows? It's better just prevent...
@@ -174,7 +253,7 @@ exports.default =
       });
      
     },
-    logIn: async function(req, res, next)
+    logIn: async (req, res, next) =>
     {
         /** This is a problem in the frontend, a logged one don't need re-log */
         if(req.cookie && req.cookie.uid)
@@ -206,7 +285,7 @@ exports.default =
             res.status(200).json({ok:true, cookie:cookie})
         })
     },
-    getUserInfo: async function(req, res, next) 
+    getUserInfo: async (req, res, next) =>
     {
         /** This request is only possible for logged ones */
         if (!(req.cookies && req.cookies.uid))
@@ -261,7 +340,7 @@ exports.default =
             return res.status(500).json({ok:false, err:"Internal error"})
         }
     },
-    createUser: async function (req, res, next)
+    createUser: async (req, res, next) =>
     {
 
         if(!req.body)
@@ -299,7 +378,7 @@ exports.default =
                 return res.status(400).json({ok:false, err:"Bad request"});
         });
     },
-    deleteUser: async function (req, res, netx)
+    deleteUser: async (req, res, netx) =>
     {
         /**
          * Delete an user from database. This operation is irreversible!
@@ -333,7 +412,7 @@ exports.default =
             });
         })
     },
-    changePassword: async function(req, res, next)
+    changePassword: async (req, res, next) =>
     {
         if(!(req.cookies && req.cookies.uid))
             return res.status(403).json({ok:false, err:"Must be logged"});

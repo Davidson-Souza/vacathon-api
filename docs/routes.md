@@ -15,3 +15,6 @@ error, the cookie will be revoked, hence, a new authentication shall be taken
 POST: <b>updateUser</b>: Update the user info, no password here. Need one json with the new info, unchanged data shall be repeated. Ex {"name": "example", "email": "example@example.com", "type":false, "metaInfo":"something"}. Return true if everything went well.  
 POST: <b>changeUserPassword</b>. Change the user password. Need a json with: oldPassword and newPassword, as well the cookie. Return true if no errors happens.  
 DELETE: <b>deleteUser</b>. Dele an existing user, should be authenticated. Require only the cookie  
+PATCH <b>setProfilePicture<b>. Upload a new profile image to the current user. Should be logged and the image field is called "profilePic"  
+GET: <b>sendVerificationCode</b>. Request a new verification code, that will be sent by email.
+GET: <b>verifyCode</b>. Validate a code, the code is passed as a parameter, and the user should be logged.

@@ -2,16 +2,8 @@
 // https://github.com/sendgrid/sendgrid-nodejs
 
 const sgMail = require('@sendgrid/mail')
-sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+sgMail.setApiKey(process.env.SEND_GRID_KEY);
 const log = require("../log")
-const msg = {
-  to: 'test@example.com', // Change to your recipient
-  from: 'test@example.com', // Change to your verified sender
-  subject: 'Sending with SendGrid is Fun',
-  text: 'and easy to do anywhere, even with Node.js',
-  html: '<strong>and easy to do anywhere, even with Node.js</strong>',
-}
-
 
 exports.default = 
 {
@@ -27,7 +19,7 @@ exports.default =
                 return next(false);
             })
             .catch((error) => {
-                log(error);
+                log(error, false);
                 return next(true);
             })
         },
