@@ -1,6 +1,7 @@
 const permanentStorage = require("./mysql").db;
 const statusDb = require("./sqlite").db;
 const log = require("../log");
+const mail = require("./mail").default;
 const utilities = require("../utilities").default
 const sanitize = utilities.sanitize
 const sha256d = utilities.sha256d
@@ -37,7 +38,60 @@ exports.default =
             });
         });
     },
+    requestConfirmationCode: async (req, res, next) =>
+    {
+        /** This request is only possible for logged ones */
+        if (!(req.cookies && req.cookies.uid))
+            return res.status(403).json({ok:false, err:"Missing cookie"});
+        const cookie = req.cookies.uid;
     
+        /** Check whether there is some kind of sus data, like some sql injection attack */
+        if ((await sanitize(cookie) < 0))
+            return res.status(400).json({ok:false, err:"Forbidden character"});
+
+        statusDb.validateCookie(cookie, async function (e, d)
+        {
+            /** Verify if the uid exists and belong to the authenticated user */  
+            if(e)
+            {
+                log(e, false);
+                return res.status(500).json({ok:false, err:"Internal error"})
+            }else
+
+            if(!d || !d[0] || !d[0].uid) return res.status(403).json({ok:false, err:"Must be logged to do this"});
+            if(sanitize(d[0].uid) < 0) return res.status(403).json({ok:false, err:"Forbidden character"});
+            
+            /** If all happens well, return the values */
+            await permanentStorage.getUserPrivateInfoById(d[0].uid, (e, r) =>
+            {
+                if(e)
+                {
+                    log(e, false);
+                    return res.status(500).json({ok:false, err:"Internal error"})
+                }
+                if(r)
+                    statusDb.createVerificationCode(d[0].uid, (err, data) =>
+                    {
+                        if(!err)
+                        {
+                            mail.sendMail(
+                                {
+                                    to: r.email, // Change to your recipient
+                                    from: 'davidsomafiazul@gmail.com', // Change to your verified sender
+                                    subject: 'Código de confirmação',
+                                    text: `Este é o seu código de confirmação para a aplicação ${data}`,
+                                    html: `Clique <a href="http://51bdc2434916.ngrok.io/api/v1/users/verifyCode/${data}">aqui </a> para validar o seu email`,
+                                }, (err) =>
+                                {
+                                    if(err) return res.status(500).json({ok:false, err:"Internal error"});
+                                    else return res.status(200).json({ok:true});
+                                });
+                        };
+                    })
+            });
+
+        });
+    },
     /** Used internally */
     isAuthenticated: (cookie, callback) =>
     {
@@ -52,6 +106,40 @@ exports.default =
                 callback(false);
             /**If the user is authenticated return it's session information */
             callback(d);
+        });
+    },
+    verifyCode: (req, res, next) =>
+    {
+        if(!(req.params && req.params.code && req.cookies && req.cookies.uid))
+            return res.status(403).json({ok:false, err:"Must be logged to do this"});
+        
+        const code = req.params.code;
+        const cookie = req.cookies.uid;
+
+        if(sanitize(cookie) < 0 || sanitize(code) < 0)
+            return res.status(400).json({ok:false, err:"Forbidden character"});
+        statusDb.lookUpCookie(cookie, (d) =>
+        {
+            if(!d || !d[0] || !d[0].uid)
+                return res.status(403).json({ok:false, err:"You aren't logged"});
+            
+            const uid = d[0].uid
+            statusDb.verifyCode(uid, code)
+                .then( r =>
+                {
+                    if(!r)
+                        return res.status(403).json({ok:false, err:"Wrong code"});
+                    permanentStorage.updateVerificationStatus(uid, (err) =>
+                    {
+                        if(err) return res.status(500).json({ok:false, err:"Internal error"});
+                        else  return res.status(200).json({ok:true});
+                    })
+                })
+                .catch((err) => 
+                {
+                    log(err);
+                    return res.status(500).json({ok:false, err:"Internal error"});  
+                })
         });
     },
     getUserMetaInfoById: async function(req, res, next) 

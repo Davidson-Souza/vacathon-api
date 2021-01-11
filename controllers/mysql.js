@@ -267,5 +267,18 @@ exports.db =
         }
         next(false);
       });
+  },
+  updateVerificationStatus: (u, next) =>
+  {
+    if(!(u && next))
+      return next(true);
+    db.query(`UPDATE profile SET isVerified=true WHERE id="?"`,u, function (err, result, fields) {
+      if (err != null)
+      {
+        if(err.errno == -111) isWorking = false 
+        next(true, err);
+      }
+      else next(false, {ok:true});
+    });
   }
 }
