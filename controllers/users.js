@@ -12,7 +12,7 @@ const baseUser =
 }
 exports.default = 
 {
-    missingParam: async function(req, res, next) 
+    missingParam: async (req, res, next) => 
     {
       return res.status(403).json({ok:false, err:"Missing id param"})
     },
@@ -142,7 +142,7 @@ exports.default =
                 })
         });
     },
-    getUserMetaInfoById: async function(req, res, next) 
+    getUserMetaInfoById: async (req, res, next) => 
     {
         // This probably will never happens, thanks to the fallback above.
         // But... Who knows? It's better just prevent...
@@ -167,7 +167,7 @@ exports.default =
             return res.json({ok:true, data:d})
       });
     },
-    updateUserInfo: async function (req, res, next)
+    updateUserInfo: async (req, res, next) =>
     {
         /**
          * Note: Password don't came here, there is a separated route for it!
@@ -213,7 +213,7 @@ exports.default =
             });
         })
     },
-    getUserMetaInfoByName: async function(req, res, next) 
+    getUserMetaInfoByName: async (req, res, next)=> 
     {
         // This probably will never happens, thanks to the fallback above.
         // But... Who knows? It's better just prevent...
@@ -237,7 +237,7 @@ exports.default =
             return res.json({ok:true, data:d})
       });
     },
-    getUserMetaInfoByEmail: async function(req, res, next) 
+    getUserMetaInfoByEmail: async(req, res, next) =>
     {
         // This probably will never happens, thanks to the fallback above.
         // But... Who knows? It's better just prevent...
@@ -262,7 +262,7 @@ exports.default =
       });
      
     },
-    logIn: async function(req, res, next)
+    logIn: async (req, res, next) =>
     {
         /** This is a problem in the frontend, a logged one don't need re-log */
         if(req.cookie && req.cookie.uid)
@@ -294,7 +294,7 @@ exports.default =
             res.status(200).json({ok:true, cookie:cookie})
         })
     },
-    getUserInfo: async function(req, res, next) 
+    getUserInfo: async (req, res, next) =>
     {
         /** This request is only possible for logged ones */
         if (!(req.cookies && req.cookies.uid))
@@ -349,7 +349,7 @@ exports.default =
             return res.status(500).json({ok:false, err:"Internal error"})
         }
     },
-    createUser: async function (req, res, next)
+    createUser: async (req, res, next) =>
     {
 
         if(!req.body)
@@ -387,7 +387,7 @@ exports.default =
                 return res.status(400).json({ok:false, err:"Bad request"});
         });
     },
-    deleteUser: async function (req, res, netx)
+    deleteUser: async (req, res, netx) =>
     {
         /**
          * Delete an user from database. This operation is irreversible!
@@ -421,7 +421,7 @@ exports.default =
             });
         })
     },
-    changePassword: async function(req, res, next)
+    changePassword: async (req, res, next) =>
     {
         if(!(req.cookies && req.cookies.uid))
             return res.status(403).json({ok:false, err:"Must be logged"});
