@@ -44,6 +44,7 @@ router.post("/changeUserPassword", controller.changePassword)
  * Note: This is irreversible!
  */
 router.delete("/deleteUser", controller.deleteUser);
+// Update the user profile picture
 router.patch("/setProfilePicture", upload.single("profilePic"),controller.uploadProfileImage);
 
 module.exports = router;

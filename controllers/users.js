@@ -37,6 +37,7 @@ exports.default =
             });
         });
     },
+    
     /** Used internally */
     isAuthenticated: (cookie, callback) =>
     {
@@ -327,6 +328,7 @@ exports.default =
                     log(e, false);
                     return res.status(500).json({ok:false, err:"Internal error"})
                 }
+                /**@todo remove files too */
                 return res.status(200).json({ok:true});
             });
         })
