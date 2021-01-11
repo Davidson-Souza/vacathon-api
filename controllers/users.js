@@ -18,7 +18,24 @@ exports.default =
     uploadProfileImage:(req, res, next) =>
     {
         if(!(req.file && req.cookies && req.cookies.uid && req.files.profileImg))
-            return res.status(400).json({ok:false, err:"Missing information"})
+            return res.status(400).json({ok:false, err:"Missing information"});
+        
+        const cookie = req.cookies.uid;
+        statusDb.lookUpCookie(cookie, (d) =>
+        {
+            if(!d || !d[0] || !d[0].uid)
+               return res.status(400).json({ok:false, err:"Missing information"});      
+            /** If the user is authenticated return it's session information */
+            
+            permanentStorage.setProfileImage(d[0].uid, req.file.filename, (err, data) =>
+            {
+                if(err)
+                {
+                    return res.status(500).json({ok:false, err:"Internal error"});
+                }
+                return res.status(200).json({ok:true});
+            });
+        });
     },
     /** Used internally */
     isAuthenticated: (cookie, callback) =>

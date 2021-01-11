@@ -1,15 +1,17 @@
 var express = require('express');
 var router = express.Router();
-var controler = require("../controllers/users").default;
+var controller = require("../controllers/users").default;
+const upload = require("../controllers/storage");
+
 
 /** Catch a malformed request */
-router.get('/', controler.missingParam);
+router.get('/', controller.missingParam);
 
 
 /* GET user public information */
-router.get('/getUserById/:userId',controler.getUserMetaInfoById );
-router.get('/getUserByName/:userName', controler.getUserMetaInfoByName)
-router.get('/getUserByEmail/:email', controler.getUserMetaInfoByEmail)
+router.get('/getUserById/:userId',controller.getUserMetaInfoById );
+router.get('/getUserByName/:userName', controller.getUserMetaInfoByName)
+router.get('/getUserByEmail/:email', controller.getUserMetaInfoByEmail)
 
 /* GET user profile info. */
 /* 
@@ -17,29 +19,31 @@ router.get('/getUserByEmail/:email', controler.getUserMetaInfoByEmail)
   anyone else, use get getUserMetaInfo - see docs/routes.md for details. Not password here, there is
   no reason to return password.
 */
-router.get('/getUserInfo', controler.getUserInfo);
+router.get('/getUserInfo', controller.getUserInfo);
 
 /* Create a new user, a.k.a signup */
-router.post('/createUser/',controler.createUser)
+router.post('/createUser/',controller.createUser)
 
 /* Login an user */
-router.post("/authenticateUser/", controler.logIn)
+router.post("/authenticateUser/", controller.logIn)
 
 /* Logout user */
 /*
   Note: The user to be logout is passed through the cookie, no more information needed
 */
-router.get("/logout", controler.logOut)
+router.get("/logout", controller.logOut)
 // Update an existing user
-router.post("/updateUser", controler.updateUserInfo)
+router.post("/updateUser", controller.updateUserInfo)
 // Change the user password, the user should exist and be authenticated.
 /**
  * Note: The old password is required, for ensuring the ownership of the account
  */
-router.post("/changeUserPassword", controler.changePassword)
+router.post("/changeUserPassword", controller.changePassword)
 // Delete an user from the system
 /**
  * Note: This is irreversible!
  */
-router.delete("/deleteUser", controler.deleteUser);
+router.delete("/deleteUser", controller.deleteUser);
+router.patch("/setProfilePicture", upload.single("profilePic"),controller.uploadProfileImage);
+
 module.exports = router;

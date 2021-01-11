@@ -4,3 +4,4 @@ tmp/*
 log.txt
 test.*
 uploads/*
+sendgrid.env

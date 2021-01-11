@@ -34,6 +34,23 @@ startMysql();
 
 exports.db = 
 {
+  setProfileImage: (uid, filename, next) =>
+  {
+    if (!isWorking)
+    {
+      startMysql();
+      return next(500, "Mysql isn't work");
+    }
+    db.query(`UPDATE profile SET profileImage="?" WHERE id="?"`,[filename, uid], function (err, result, fields)
+    {
+      if (err != null)
+      {
+        if(err.errno == -111) isWorking = false 
+        return next(true, err);
+      }
+      next(false, result)
+    });
+  },
   getUserAnalyze: (uid, next) =>
   {
     if (!isWorking)
@@ -55,7 +72,6 @@ exports.db =
       }
       next(false, result)
     });
-
   },
   getUserById: (uid, next) =>
   {   
@@ -102,7 +118,7 @@ exports.db =
       startMysql();
       return next(500, "Mysql isn't work")
     }
-    db.query(`SELECT name, id, type, email, metaInfo FROM profile WHERE id="?"`,[uid], function (err, result, fields) {
+    db.query(`SELECT name, id, type, email, metaInfo, profileImage FROM profile WHERE id="?"`,[uid], function (err, result, fields) {
     if (err != null)
     {
       if(err.errno == -111) isWorking = false 
