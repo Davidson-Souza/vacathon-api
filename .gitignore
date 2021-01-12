@@ -5,3 +5,4 @@ log.txt
 test.*
 uploads/*
 sendgrid.env
+config.json
