@@ -1,11 +1,19 @@
+/**
+ * Control everthing related to users
+ * @author Davidson Souza
+ * @date December, 2020
+ * @copyright Davidson Souza, 2020-2021
+ * @license MIT
+ */
 const permanentStorage = require("./mysql").db;
-const statusDb = require("./sqlite").db;
-const log = require("../log");
-const mail = require("./mail").default;
-const utilities = require("../utilities").default
-const sanitize = utilities.sanitize
-const sha256d = utilities.sha256d
-const configs = require("../config.json");
+const statusDb         = require("./sqlite").db;
+const log              = require("../log");
+const mail             = require("./mail").default;
+const utilities        = require("../utilities").default
+const sanitize         = utilities.sanitize
+const sha256d          = utilities.sha256d
+const configs          = require("../config.json");
+
 /** How a user should looks like */
 const baseUser = 
 {
