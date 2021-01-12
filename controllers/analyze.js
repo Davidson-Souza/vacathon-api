@@ -1,7 +1,17 @@
+/**
+ * @about Implements analyze controllers
+ * @author Davidson Souza
+ * @date December, 2020
+ * @copyright Davidson Souza, 2020-2021
+ * @license MIT
+ */
+
 const utilities = require("../utilities").default
-const log = require("../log");
-const users = require("./users").default;
+const log       = require("../log");
+const users     = require("./users").default;
+
 const db = require("./mysql").db;
+
 /** Log it! */
 log("Starting analyze subsystem", false);
 

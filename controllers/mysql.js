@@ -1,6 +1,15 @@
+/**
+ * @about Implements email subsystem
+ * @author Davidson Souza
+ * @date December, 2020
+ * @copyright Davidson Souza, 2020-2021
+ * @license MIT
+ */
+
 const mysql = require('mysql');
-const conf = require("../config.json").mysql;
-const log = require("../log");
+const conf  = require("../config.json").mysql;
+const log   = require("../log");
+
 var db, isWorking = false;
 
 /** Try connect to Mysql */

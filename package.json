@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./index.js"
+    "start": "node ./index.js",
+    "config": "npm install --save && mkdir tmp updates"
   },
   "dependencies": {
     "@sendgrid/mail": "^7.4.1",

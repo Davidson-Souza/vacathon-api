@@ -1,13 +1,14 @@
 /**
  * @about: Implements the sqlite functions. To understand why SQLite is here, see docs/storage
  * @author: Davidson Souza
- * @date: December, 2020
+ * @date December, 2020
  */
 
-const sqlite3 = require("sqlite3")
+const sqlite3    = require("sqlite3")
 const sqliteconf = require("../config.json").sqlite
-const crypto = require("crypto")
-const log = require("../log")
+const crypto     = require("crypto")
+const log        = require("../log")
+
 /** Some queries to help */
 const insetQuery = `INSERT INTO cookies(uid, cookie) VALUES(?, ?)`;
 const selectQuery = "SELECT uid, cookie FROM cookies WHERE cookie=?"

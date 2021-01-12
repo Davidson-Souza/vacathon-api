@@ -1,6 +1,10 @@
+/**
+ * This file is like a file bucket to store and manage files
+ * More information in multer github page
+ */
 const multer = require('multer');
-const path = require("path");
-const DIR = './uploads';
+const path   = require("path");
+const DIR    = './uploads';
 
 let storage = multer.diskStorage({
     destination: (req, file, cb) => {

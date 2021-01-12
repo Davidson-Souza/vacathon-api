@@ -1,5 +1,5 @@
 {
-    "host":"https://61b7952a05bf.ngrok.io",
+    "host":"http://6f4a7fd22d51.ngrok.io",
     "mysql":
     {
         "host": "localhost",
@@ -18,7 +18,7 @@
     },
     "mail":
     {
-        "from":"youremailhere@emal.com"
+        "from":"davidsomafiazul@gmail.com"
     }
 
 }
