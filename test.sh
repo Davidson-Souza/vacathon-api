@@ -2,7 +2,7 @@
 # Useful variables
 
 echo "Starting some useful tests"
-baseUrl="https://5ac526e53d68.ngrok.io"
+baseUrl="5ac526e53d68.ngrok.io"
 contType="Content-Type: application/json"
 authUser='{"email": "example@email.com", "type":12, "password":"2321", "metaInfo":"something"}'
 createUser='{"name": "linux Is Life", "email": "example@email.com", "type":false, "password":"2321", "metaInfo":"something"}'

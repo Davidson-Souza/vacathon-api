@@ -356,7 +356,6 @@ exports.default =
         
         let userInfo = baseUser;
         const b = req.body
-    
         if(!b.name || b.type==undefined || !b.password || !b.email || !b.metaInfo)
             return res.status(400).json({ok:false, err:"Missing information"});
         
@@ -369,22 +368,32 @@ exports.default =
         
         /** Store the hash of the password, not the actual plain text */
         userInfo.password = await sha256d(b.password);
-        
-        /** Create the user */
-        permanentStorage.createUser(userInfo)
-        .then(()=>
+        permanentStorage.getUserByEmail(b.email, (e, r) =>
         {
-            return res.status(200).json({ok:true});
-        })
-        .catch((e, d) =>
-        {
-            if(e)
+            console.log(e, r)
+            if(!r)
             {
-                log(e, false);
-                return res.status(500).json({ok:false, err:"Internal error"})
+                /** Create the user */
+                permanentStorage.createUser(userInfo)
+                    .then(()=>
+                    {
+                        return res.status(200).json({ok:true});
+                    })
+                .catch((e, d) =>
+                {
+                    if(e)
+                    {
+                        log(e, false);
+                        return res.status(500).json({ok:false, err:"Internal error"})
+                    }
+                    if(e == 400)
+                    return res.status(400).json({ok:false, err:"Bad request"});
+                });
             }
-            if(e == 400)
-                return res.status(400).json({ok:false, err:"Bad request"});
+            else
+            {
+                return res.status(403).json({ok:false, err:"email already used"})
+            }
         });
     },
     deleteUser: async (req, res, netx) =>
