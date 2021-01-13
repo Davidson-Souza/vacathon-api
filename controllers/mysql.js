@@ -127,13 +127,13 @@ exports.db =
       startMysql();
       return next(500, "Mysql isn't work")
     }
-    db.query(`SELECT name, id, type, email, metaInfo, profileImage FROM profile WHERE id="?"`,[uid], function (err, result, fields) {
+    db.query(`SELECT name, id, type, email, metaInfo, profileImage FROM profile WHERE id=?`,[uid], function (err, result, fields) {
     if (err != null)
     {
       if(err.errno == -111) isWorking = false 
         return next(true, err);
-      }
-      if(result.size == 0) return next(true, "Not found"); 
+    }
+      if(result.length == 0) return next(true, "Not found"); 
       else return next(false, result[0])
     });
   },
@@ -211,7 +211,7 @@ exports.db =
       startMysql();
       return next(500, "Mysql isn't work")
     }
-    db.query(`DELETE FROM profile WHERE id="?"`, u , function (err, result, fields) {
+    db.query(`DELETE FROM profile WHERE id=?`, u , function (err, result, fields) {
       if (err != null)
       {
         if(err.errno == -111) isWorking = false 
@@ -282,7 +282,7 @@ exports.db =
   {
     if(!(u && next))
       return next(true);
-    db.query(`UPDATE profile SET isVerified=true WHERE id="?"`,u, function (err, result, fields) {
+    db.query(`UPDATE profile SET isVerified=true WHERE id=?`,u, function (err, result, fields) {
       if (err != null)
       {
         if(err.errno == -111) isWorking = false 

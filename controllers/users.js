@@ -6,7 +6,7 @@
  * @license MIT
  */
 const permanentStorage = require("./mysql").db;
-const statusDb         = require("./sqlite").db;
+const statusDb         = require("./leveldb").db;
 const log              = require("../log");
 const mail             = require("./mail").default;
 const utilities        = require("../utilities").default
@@ -31,21 +31,26 @@ exports.default =
             return res.status(400).json({ok:false, err:"Missing information"});
         
         const cookie = req.cookies.uid;
-        statusDb.lookUpCookie(cookie, (d) =>
-        {
-            if(!d || !d[0] || !d[0].uid)
-               return res.status(400).json({ok:false, err:"Missing information"});      
-            /** If the user is authenticated return it's session information */
-            
-            permanentStorage.setProfileImage(d[0].uid, req.file.filename, (err, data) =>
+        this.default.isAuthenticated(cookie)
+            .then( d =>
             {
-                if(err)
+                permanentStorage.setProfileImage(d, req.file.filename, (err, data) =>
                 {
-                    return res.status(500).json({ok:false, err:"Internal error"});
-                }
-                return res.status(200).json({ok:true});
-            });
-        });
+                    if(err)
+                    {
+                        return res.status(500).json({ok:false, err:"Internal error"});
+                    }
+                    return res.status(200).json({ok:true});
+                });
+            })
+            .catch(e =>
+                {
+                    if(e)
+                    {
+                        log(e);
+                        return res.status(500).json({ok:false, err:"Internal error"});
+                    }
+                });
     },
     requestConfirmationCode: async (req, res, next) =>
     {
@@ -86,10 +91,10 @@ exports.default =
                             mail.sendMail(
                                 {
                                     to: r.email.replace("'", "").replace("'", ""),
-                                    from: configs.mail.from, 
+                                    from: process.env.MAIL_FROM, 
                                     subject: 'Código de confirmação',
                                     text: `Este é o seu código de confirmação para a aplicação ${data}`,
-                                    html: `Clique <a href="${configs.host}/api/v1/users/verifyCode/${data}">aqui </a> para validar o seu email`,
+                                    html: `Clique <a href="${process.env.HOST}/api/v1/users/verifyCode/${data}">aqui </a> para validar o seu email`,
                                 }, (err) =>
                                 {
                                     if(err) return res.status(500).json({ok:false, err:"Internal error"});
@@ -102,19 +107,23 @@ exports.default =
         });
     },
     /** Used internally */
-    isAuthenticated: (cookie, callback) =>
+    isAuthenticated: (cookie) =>
     {
-        if(!cookie || !callback)
+        return new Promise((accept, reject) =>
         {
-            log("users::isAuthenticated: Missing callback", true);
-            return ;
-        }
-        statusDb.lookUpCookie(cookie, (d) =>
-        {
-            if(!d || !d[0] || !d[0].uid)
-                callback(false);
-            /**If the user is authenticated return it's session information */
-            callback(d);
+            if(!cookie)
+            {
+                log("users::isAuthenticated: Missing cookie", true);
+                return ;
+            }
+
+            statusDb.lookUpCookie(cookie, (d) =>
+            {
+                if(!d)
+                    reject();
+                /**If the user is authenticated return it's session information */
+                accept(d);
+            });
         });
     },
     verifyCode: (req, res, next) =>
@@ -193,24 +202,26 @@ exports.default =
         if ((sanitize(req.body.name) > 0 && typeof(req.body.name) == "string"))  name = req.body.name; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
         if ((sanitize(req.body.metaInfo) > 0) && typeof(req.body.metaInfo == "string"))  metaInfo = req.body.metaInfo; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
         
-        /** What is your internal id? */
-        statusDb.lookUpCookie(cookie, (d) =>
-        {
-            if(!d || !d[0] || !d[0].uid)
-                return res.status(500).json({ok:false, err:"You aren't logged"});
-            
-            const uid = d[0].uid
-            /** Let's update, then */
-            permanentStorage.updateUser([name, type, email, metaInfo, uid], (e, r) =>
+        this.default.isAuthenticated(cookie)
+            .then( d =>
+                {
+                    permanentStorage.updateUser([name, type, email, metaInfo, d], (e, r) =>
+                    {
+                        if(e)
+                        {
+                            log(e, false);
+                            return res.status(500).json({ok:false, err:"Internal error"})
+                        }
+                        return res.status(200).json({ok:true});
+                    });
+                })
+
+            .catch((e) =>
             {
                 if(e)
-                {
-                    log(e, false);
-                    return res.status(500).json({ok:false, err:"Internal error"})
-                }
-                return res.status(200).json({ok:true});
+                    log(e);
+                return res.status(500).json({ok:false, err:"Internal error"})
             });
-        })
     },
     getUserMetaInfoByName: async (req, res, next)=> 
     {
@@ -303,31 +314,27 @@ exports.default =
         /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(cookie) < 0))
             return res.status(400).json({ok:false, err:"Forbidden character"});
-
-        statusDb.validateCookie(cookie, async function (e, d)
-        {
-            /** Verify if the uid exists and belong to the authenticated user */  
-            if(e)
-            {
-                log(e, false);
-                return res.status(500).json({ok:false, err:"Internal error"})
-            }else
-
-            if(!d || !d[0] || !d[0].uid) return res.status(403).json({ok:false, err:"Must be logged to do this"});
-            if(sanitize(d[0].uid) < 0) return res.status(403).json({ok:false, err:"Forbidden character"});
-            
-            /** If all happens well, return the values */
-            await permanentStorage.getUserPrivateInfoById(d[0].uid, (e, r) =>
-            {
-                if(e)
+        this.default.isAuthenticated(cookie)
+            .then( d =>
                 {
-                    log(e, false);
-                    return res.status(500).json({ok:false, err:"Internal error"})
-                }
-                if(r) return res.status(200).json({ok:true, data:r});
-            });
-
-        });
+                   
+                    /** If all happens well, return the values */
+                    permanentStorage.getUserPrivateInfoById(d, (e, r) =>
+                    {
+                        if(e)
+                        {
+                            log(e, false);
+                            return res.status(500).json({ok:false, err:e})
+                        }
+                        return res.status(200).json({ok:true, data:r});
+                    });
+                })
+            .catch( e =>
+                {
+                    if(e)
+                        log(e);
+                    return res.status(404).json({ok:false, err:"User not found"})
+                })
     },
     logOut: async (req, res, next) =>
     {
@@ -341,16 +348,9 @@ exports.default =
         
         if(statusDb.deleteCookie(cookie))
             return res.status(200).json({ok:true});
-        
-        if(e)
-        {
-            log(e, false);
-            return res.status(500).json({ok:false, err:"Internal error"})
-        }
     },
     createUser: async (req, res, next) =>
     {
-
         if(!req.body)
             return res.json({ok:false, err:"Missing args"});
         
@@ -375,7 +375,8 @@ exports.default =
         .then(()=>
         {
             return res.status(200).json({ok:true});
-        }).catch((e, d) =>
+        })
+        .catch((e, d) =>
         {
             if(e)
             {
@@ -399,26 +400,28 @@ exports.default =
         if ((await sanitize(cookie)) < 0)
             return res.status(400).json({ok:false, err:"Forbidden characters found"});
 
-         /** What is your internal id? */
-        statusDb.lookUpCookie(cookie, (d) =>
-        {
-            if(!d || !d[0] || !d[0].uid)
-                return res.status(500).json({ok:false, err:"You aren't logged"});
-            /** Logoff */
-            statusDb.deleteCookie(cookie);
-            const uid = d[0].uid
-            /** Let's delete, then */
-            permanentStorage.deleteUser(uid, (e, r) =>
-            {
-                if(e)
+        this.default.isAuthenticated(cookie)
+            .then( d =>
                 {
-                    log(e, false);
-                    return res.status(500).json({ok:false, err:"Internal error"})
-                }
-                /**@todo remove files too */
-                return res.status(200).json({ok:true});
-            });
-        })
+                    permanentStorage.deleteUser(d, (e, r) =>
+                    {
+                        console.log("deleting");
+
+                        if(e)
+                        {
+                            log(e, false);
+                            return res.status(500).json({ok:false, err:"Internal error"})
+                        }
+                        /**@todo remove files too */
+                        return res.status(200).json({ok:true});
+                    });
+                })
+                .catch( e =>
+                    {
+                        if(e)
+                            log(e);
+                        return res.status(500).json({ok:false, err:"Internal error"});
+                    })
     },
     changePassword: async (req, res, next) =>
     {
@@ -435,22 +438,24 @@ exports.default =
         const oldPasswordHash = await sha256d(req.body.oldPassword);
 
         /** What is your internal id? */
-        statusDb.lookUpCookie(cookie, (d) =>
-        {
-            if(!d || !d[0] || !d[0].uid)
-                return res.status(403).json({ok:false, err:"You aren't logged"});
-            
-            const uid = d[0].uid
-            /** Let's update, then */
-            permanentStorage.updateUserPassword([newPasswordHash, oldPasswordHash, , uid], (e, r) =>
-            {
-                if(e)
+        this.default.isAuthenticated(cookie)
+            .then( d =>
                 {
-                    log(e, false);
-                    return res.status(500).json({ok:false, err:"Internal error"})
-                }
-                else return res.status(200).json({ok:true});
-            });
-        })
+                    permanentStorage.updateUserPassword([newPasswordHash, oldPasswordHash, d], (e, r) =>
+                    {
+                        if(e)
+                        {
+                            log(e, false);
+                            return res.status(500).json({ok:false, err:"Internal error"})
+                        }
+                        else return res.status(200).json({ok:true});
+                    });
+                })
+                .catch( e =>
+                    {
+                        if(e)
+                            log(e);
+                        return res.status(500).json({ok:false, err:"Internal error"})
+                    })
     }
 }
