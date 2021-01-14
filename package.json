@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "webpack-dev-server --mode development --hot --open --port $PORT",
-    "build": "npm i -dev && webpack --mode production",
+    "start": "node index.js",
+    "build": "npm i -dev && node index.js",
     "heroku-postbuild": "npm build"
   },
   "dependencies": {
