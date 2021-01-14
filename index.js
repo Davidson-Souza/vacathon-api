@@ -20,7 +20,7 @@ process.on("unhandledRejection", (e) =>
 /**Let's log the time of startup */
 log("System startup");
 /**Listen to the API port */
-app.listen(port, () =>
+app.listen(port, "vacathon-api.herokuapp.com", () =>
 {
   log(`Listening to ${port}`);
 });
