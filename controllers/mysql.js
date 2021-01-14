@@ -16,7 +16,7 @@ var db, isWorking = false;
 function startMysql()
 {
   log("trying to start Mysql")
-  db = mysql.createConnection(conf);
+  db = mysql.createConnection(process.env.CLEARDB_DATABASE_URL);
   
   db.on("error", (e) =>
   {
