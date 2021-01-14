@@ -7,8 +7,7 @@
 const log = require("./log")
 const app = require("./app")
 const config = require("./config.json");
-console.log(process.env)
-const port = process.env.PORT;
+
 /** Catch errors, don't break */
 process.on("uncaughtException", (e) =>
 {
