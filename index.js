@@ -7,7 +7,8 @@
 const log = require("./log")
 const app = require("./app")
 const config = require("./config.json");
-const port = process.env.PORT | 8080;
+console.log(process.env)
+const port = process.env.PORT;
 /** Catch errors, don't break */
 process.on("uncaughtException", (e) =>
 {
@@ -20,7 +21,4 @@ process.on("unhandledRejection", (e) =>
 /**Let's log the time of startup */
 log("System startup");
 /**Listen to the API port */
-app.listen(port, "vacathon-api.herokuapp.com", () =>
-{
-  log(`Listening to ${port}`);
-});
+app.listen(port, () => console.log("Server is running..."));
