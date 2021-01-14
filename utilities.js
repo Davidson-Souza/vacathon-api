@@ -12,7 +12,7 @@ async function sha256d(chunk)
 {
     return sha256(await sha256(chunk));
 }
-/** @TODO this function is O(n⁴), improve it! */
+/** @TODO this function is O(n⁵), improve it! */
 /** Verify if a passed string is potentially harmful */
 function sanitize(str)
 {
@@ -26,7 +26,7 @@ function sanitize(str)
     for (let i = 0; i<str.length; i++)
     {
         c = str.charAt(i);
-        if((c < '0' || c > 'z') && c != ' ' && c!=',' && c!='@' && c!=".")
+        if((c < '0' || c > 'z') && c != ':'&& c != ' ' && c!=',' && c!='@' && c!=".")
             return -1;
     }
     return 1;

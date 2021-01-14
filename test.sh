@@ -2,7 +2,7 @@
 # Useful variables
 
 echo "Starting some useful tests"
-baseUrl="localhost:8080"
+baseUrl="5ac526e53d68.ngrok.io"
 contType="Content-Type: application/json"
 authUser='{"email": "example@email.com", "type":12, "password":"2321", "metaInfo":"something"}'
 createUser='{"name": "linux Is Life", "email": "example@email.com", "type":false, "password":"2321", "metaInfo":"something"}'
@@ -43,7 +43,6 @@ then
     echo "Error: Logout"
     exit
 fi
-    
 echo "Deleting the user"
 # Authenticate again
 cookie=$(curl -X POST -H "$contType" -d "$authUser" --silent  $baseUrl/api/v1/users/authenticateUser | jq ".cookie") 

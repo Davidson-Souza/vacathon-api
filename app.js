@@ -5,10 +5,11 @@ const logger = require('morgan');
 const indexRouter = require('./routes/index');
 const analyzeRouter = require('./routes/analyze');
 const usersRouter = require('./routes/users');
+const files = require("./routes/files")
 
 const log = require("./log")
 const app = express();
-
+app.disable('etag');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -18,7 +19,7 @@ app.use(cookieParser());
 app.use('/api/v1/analyze/', analyzeRouter);
 app.use('/', indexRouter);
 app.use('/api/v1/users/', usersRouter);
-
+app.use('/images/', files);
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   res.status(404).json({ok:false, err:"404 not found!"});

@@ -3,7 +3,7 @@
  * @author: Davidson Souza
  * @date: December, 2020
  */
-
+/**@todo log is an utility */
 const logConf = require("./config.json").logging || false;
 const fs = require("fs")
 var file;
