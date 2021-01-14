@@ -95,7 +95,7 @@ exports.db =
         return next(500, "Mysql isn't work")
       }
 
-    db.query(`SELECT name, metaInfo FROM profile WHERE id="?"`,[uid], function (err, result, fields) {
+    db.query(`SELECT name, metaInfo FROM profile WHERE id=?`,[uid], function (err, result, fields) {
         if (err != null)
         {
           if(err.errno == -111) isWorking = false 
@@ -277,6 +277,29 @@ exports.db =
         }
         next(false);
       });
+  },
+  getUserId: (email, next) =>
+  {
+    if(!email)
+      return ;
+    /** Is the database running? */
+    if (!isWorking)
+    {
+      startMysql();
+      log("Fail to create new analyze, mysql isn't working!", false);
+      next(true);
+      return ;
+    }
+    db.query(`SELECT id FROM profile WHERE email="?"`,[email], (err, v, f) =>
+    {
+      if (err != null)
+      {
+        log(err)
+        if(err.errno == -111) isWorking = false 
+        return next(true);
+      }
+      next(false, v[0]);
+    });
   },
   updateVerificationStatus: (u, next) =>
   {

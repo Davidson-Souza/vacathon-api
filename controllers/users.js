@@ -432,6 +432,51 @@ exports.default =
                         return res.status(500).json({ok:false, err:"Internal error"});
                     })
     },
+    recoverPassword: async (req, res, next) =>
+    {
+        if(!(req.params && req.params.cookie))
+            return res.status(403).json({ok:false, err:"Missing cookie"});
+        const cookie = req.params.cookie;
+        if(sanitize(cookie) < 0)
+            return res.status(400).json({ok:false, err:"Forbidden character found"});
+        
+        statusDb.lookUpCookie(cookie, (uid) =>
+        {
+        
+        })
+    },
+    getRecoverPassword: async (req, res, next) =>
+    {
+        if(!(req.body && req.body.email))
+            return res.status(403).json({ok:false, err:"Missing mail"});
+        const email = req.body.email;
+        if(sanitize(email) < 0)
+            return res.status(400).json({ok:false, err:"Forbidden character found"});
+        permanentStorage.getUserId(email, async (err, res) =>
+        {
+            if(err || uid.length == 0)
+                return res.status(404).json({ok:false, err:"Not found"});
+            
+            else
+            {
+                const id = res.id;
+                const cookie = await statusDb.createCookie(id, 1);
+                if(cookie)
+                    mail.sendMail(
+                        {
+                            to: email,
+                            from: process.env.MAIL_FROM, 
+                            subject: 'Código de recuperação',
+                            text: `Cline no link para recuperar o seu email`,
+                            html: `Clique <a href="${process.env.HOST}/api/v1/users/verifyCode/${cookie}">aqui </a> recuperar a sua senha`,
+                        }, (err) =>
+                        {
+                            if(err) return res.status(500).json({ok:false, err:"Internal error"});
+                            else return res.status(200).json({ok:true});
+                        });
+            }     
+        })
+    },
     changePassword: async (req, res, next) =>
     {
         if(!(req.cookies && req.cookies.uid))

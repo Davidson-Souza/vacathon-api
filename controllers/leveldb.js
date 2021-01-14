@@ -20,7 +20,7 @@ db.open("../tmp/session", (err) =>
 
 exports.db = 
 {
-    createCookie:async (uid) =>
+    createCookie:async (uid, type=0) =>
     {
         if (!isWorking)
         {
@@ -29,7 +29,7 @@ exports.db =
             return -1;
         }
         /** @todo that is clearly a bad method */
-        const cookie = await sha256d(`cookie${Math.floor(Math.random() * 123123123123123123123)}`);
+        const cookie = type + await sha256d(`cookie${Math.floor(Math.random() * 123123123123123123123)}`);
         db.put(cookie, uid, function (err)
         {
             if(err)

@@ -43,7 +43,6 @@ then
     echo "Error: Logout"
     exit
 fi
-    
 echo "Deleting the user"
 # Authenticate again
 cookie=$(curl -X POST -H "$contType" -d "$authUser" --silent  $baseUrl/api/v1/users/authenticateUser | jq ".cookie") 
