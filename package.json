@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "node index.js",
-    "build": "npm i -dev && node index.js",
+    "run": "npm i && mkdir tmp uploads",
     "heroku-postbuild": "npm build"
   },
   "dependencies": {
