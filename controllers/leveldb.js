@@ -20,6 +20,11 @@ db.open("../tmp/session", (err) =>
 
 exports.db = 
 {
+    /**
+     * There are 3 types of cookies: session, password recovery and confirmation
+     * @param {an id of the user} uid 
+     * @param {the type of the cookie, defined above} type 
+     */
     createCookie:async (uid, type=0) =>
     {
         if (!isWorking)

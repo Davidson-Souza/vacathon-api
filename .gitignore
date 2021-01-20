@@ -6,3 +6,4 @@ test.*
 uploads/*
 sendgrid.env
 config*
+.env

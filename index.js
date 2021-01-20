@@ -21,4 +21,4 @@ process.on("unhandledRejection", (e) =>
 /**Let's log the time of startup */
 log("System startup");
 /**Listen to the API port */
-app.listen(port, () => console.log("Server is running..."));
+app.listen(port, () => log(`listening to: ${process.env.PORT}`));

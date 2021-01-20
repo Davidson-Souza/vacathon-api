@@ -1,5 +1,5 @@
 /**
- * @about Implements email subsystem
+ * @about Implements mysql subsystem
  * @author Davidson Souza
  * @date December, 2020
  * @copyright Davidson Souza, 2020-2021
@@ -16,7 +16,7 @@ var db, isWorking = false;
 function startMysql()
 {
   log("trying to start Mysql")
-  db = mysql.createConnection(process.env.CLEARDB_DATABASE_URL);
+  db = mysql.createConnection(conf);
   
   db.on("error", (e) =>
   {
@@ -50,7 +50,7 @@ exports.db =
       startMysql();
       return next(500, "Mysql isn't work");
     }
-    db.query(`UPDATE profile SET profileImage="?" WHERE id="?"`,[filename, uid], function (err, result, fields)
+    db.query(`UPDATE profile SET profilePic="?" WHERE id="?"`,[filename, uid], function (err, result, fields)
     {
       if (err != null)
       {
@@ -127,9 +127,10 @@ exports.db =
       startMysql();
       return next(500, "Mysql isn't work")
     }
-    db.query(`SELECT name, id, type, email, metaInfo, profileImage FROM profile WHERE id=?`,[uid], function (err, result, fields) {
+    db.query(`SELECT name, type, email, metaInfo, profilePic FROM profile WHERE id=?`,[uid], function (err, result, fields) {
     if (err != null)
     {
+      log(err, false);
       if(err.errno == -111) isWorking = false 
         return next(true, err);
     }
@@ -161,13 +162,13 @@ exports.db =
       return next(500, "Mysql isn't work")
     }
     db.query(`SELECT id FROM profile WHERE email="?" AND password="?"`,info, function (err, result, fields) {
-      if (err != null)
+      if (err != null || !result)
       {
         if(err.errno == -111) isWorking = false 
-        next(true, err);
+        return next(true, err); 
       }
       if (result.size == 0) next(false,{res: "User not found!"});
-      next(false, result[0])
+      else next(false, result[0])
     });
   },
   getUserByEmail:(email, next)=>
@@ -298,7 +299,7 @@ exports.db =
         if(err.errno == -111) isWorking = false 
         return next(true);
       }
-      next(false, v[0]);
+      next(false, v[0].replace("'", "").replace("'", ""));
     });
   },
   updateVerificationStatus: (u, next) =>

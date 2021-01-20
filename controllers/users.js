@@ -5,6 +5,7 @@
  * @copyright Davidson Souza, 2020-2021
  * @license MIT
  */
+
 const permanentStorage = require("./mysql").db;
 const statusDb         = require("./leveldb").db;
 const log              = require("../log");
@@ -12,13 +13,13 @@ const mail             = require("./mail").default;
 const utilities        = require("../utilities").default
 const sanitize         = utilities.sanitize
 const sha256d          = utilities.sha256d
-const configs          = require("../config.json");
 
 /** How a user should looks like */
 const baseUser = 
 {
     name:0, type:0, password:0, email:0, metaInfo:0
 }
+
 exports.default = 
 {
     missingParam: async (req, res, next) => 
@@ -63,47 +64,51 @@ exports.default =
         if ((await sanitize(cookie) < 0))
             return res.status(400).json({ok:false, err:"Forbidden character"});
 
-        statusDb.validateCookie(cookie, async function (e, d)
+        this.default.isAuthenticated(cookie)
+        .then( async (d) =>
         {
-            /** Verify if the uid exists and belong to the authenticated user */  
-            if(e)
-            {
-                log(e, false);
-                return res.status(500).json({ok:false, err:"Internal error"})
-            }else
+            console.log(d);
 
-            if(!d || !d[0] || !d[0].uid) return res.status(403).json({ok:false, err:"Must be logged to do this"});
-            if(sanitize(d[0].uid) < 0) return res.status(403).json({ok:false, err:"Forbidden character"});
-            
+            /** Verify if the uid exists and belong to the authenticated user */  
+            if(!d)
+            {
+                log(d, false);
+                return res.status(500).json({ok:false, err:"Internal error"})
+            }
+
             /** If all happens well, return the values */
-            permanentStorage.getUserPrivateInfoById(d[0].uid, (e, r) =>
-            {                
+            permanentStorage.getUserPrivateInfoById(d, async (e, r) =>
+            {          
+                console.log("djfkd")      
                 if(e)
                 {
                     log(e, false);
                     return res.status(500).json({ok:false, err:"Internal error"})
                 }
                 if(r)
-                    statusDb.createVerificationCode(d[0].uid, (err, data) =>
+                {
+                    const cookie = await statusDb.createCookie(d, 2)
+                    if(typeof(cookie) == "string")
                     {
-                        if(!err)
+                        mail.sendMail(
                         {
-                            mail.sendMail(
-                                {
-                                    to: r.email.replace("'", "").replace("'", ""),
-                                    from: process.env.MAIL_FROM, 
-                                    subject: 'Código de confirmação',
-                                    text: `Este é o seu código de confirmação para a aplicação ${data}`,
-                                    html: `Clique <a href="${process.env.HOST}/api/v1/users/verifyCode/${data}">aqui </a> para validar o seu email`,
-                                }, (err) =>
-                                {
-                                    if(err) return res.status(500).json({ok:false, err:"Internal error"});
-                                    else return res.status(200).json({ok:true});
-                                });
-                        };
-                    })
+                            to: r.email.replace("'", "").replace("'", ""),
+                            from: process.env.MAIL_FROM, 
+                            subject: 'Código de confirmação',
+                            text: `Este é o seu código de confirmação para a aplicação ${cookie}`,
+                            html: `Clique <a href="${process.env.HOST}/api/v1/users/verifyCode/${cookie}">aqui </a> para validar o seu email`,
+                        }, (err) =>
+                        {
+                            if(err) return res.status(500).json({ok:false, err:"Internal error"});
+                            else return res.status(200).json({ok:true});
+                        });
+                    };
+                }
             });
-
+        })
+        .catch((e) =>
+        {
+            return res.status(403).json({ok:false, err:"Must be logged"});
         });
     },
     /** Used internally */
@@ -133,22 +138,16 @@ exports.default =
         if(sanitize(code) < 0)
             return res.status(400).json({ok:false, err:"Forbidden character"});
 
-        statusDb.verifyCode(code)
-            .then( r =>
+        statusDb.lookUpCookie(code, r =>
             {
                 if(!r)
                     return res.status(403).json({ok:false, err:"Wrong code"});
-                permanentStorage.updateVerificationStatus(r.uid, (err) =>
+                permanentStorage.updateVerificationStatus(r, (err) =>
                 {
                     if(err) return res.status(500).json({ok:false, err:"Internal error"});
                     else  return res.status(200).json({ok:true});
                 })
-            })
-            .catch((err) => 
-            {
-                log(err);
-                return res.status(500).json({ok:false, err:"Internal error"});  
-            })
+            });
     },
     getUserMetaInfoById: async (req, res, next) => 
     {
@@ -295,7 +294,7 @@ exports.default =
             if(e)
             {
                 log(e, false);
-                return res.status(500).json({ok:false, err:"Internal error"})
+                return res.status(500).json({ok:false, err:"Login error"})
             }
             if(!d)
                 return res.status(302).json({ok:false, err:"User not exist in"})
@@ -324,9 +323,16 @@ exports.default =
                         if(e)
                         {
                             log(e, false);
-                            return res.status(500).json({ok:false, err:e})
+                            return res.status(500).json({ok:false, err:"Internal error"})
                         }
-                        return res.status(200).json({ok:true, data:r});
+                        return res.status(200).json({ok:true, data:
+                            {
+                                "name":r.name.replace("'", "").replace("'", ""),
+                                "type":r.type,
+                                "email":r.email.replace("'", "").replace("'", ""),
+                                "metaInfo":r.metaInfo.replace("'", "").replace("'", ""),
+                                "profileImage":r.profilePic.replace("'", "").replace("'", "")
+                            }});
                     });
                 })
             .catch( e =>
