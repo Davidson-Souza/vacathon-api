@@ -50,7 +50,7 @@ exports.db =
       startMysql();
       return next(500, "Mysql isn't work");
     }
-    db.query(`UPDATE profile SET profilePic="?" WHERE id="?"`,[filename, uid], function (err, result, fields)
+    db.query(`UPDATE profile SET profilePic="?" WHERE id=?`,[filename, uid], function (err, result, fields)
     {
       if (err != null)
       {
@@ -111,7 +111,7 @@ exports.db =
       startMysql();
       return next(500, "Mysql isn't work")
     }
-    db.query(`UPDATE profile SET name="?", type="?", email="?", metaInfo="?" WHERE id="?"`,user, function (err, result, fields) {
+    db.query(`UPDATE profile SET name="?", type="?", email="?", metaInfo="?" WHERE id=?`,user, function (err, result, fields) {
       if (err != null)
       {
         if(err.errno == -111) isWorking = false 
@@ -145,7 +145,7 @@ exports.db =
       startMysql();
       return next(500, "Mysql isn't work")
     }
-    db.query(`UPDATE profile SET password="?" WHERE password="?" AND id="?"`,info, function (err, result, fields) {
+    db.query(`UPDATE profile SET password="?" WHERE password="?" AND id=?`,info, function (err, result, fields) {
       if (err != null)
       {
         if(err.errno == -111) isWorking = false 
