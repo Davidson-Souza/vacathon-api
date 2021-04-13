@@ -11,6 +11,7 @@ const log = require("../log")
 /** Set the api key
  * Note: The key should be set as an env variable
  */
+
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 exports.default = 

@@ -88,17 +88,15 @@ exports.default =
                     const cookie = await statusDb.createCookie(d, 2)
                     if(typeof(cookie) == "string")
                     {
-                        console.log(e)
                         mail.sendMail(
                         {
                             to: r.email,
                             from: process.env.MAIL_FROM, 
                             subject: 'Código de confirmação',
                             text: `Este é o seu código de confirmação para a aplicação ${cookie}`,
-                            html: `Clique <a href="${process.env.HOST}/api/v1/users/verifyCode/${cookie}">aqui </a> para validar o seu email`,
+                            html: `Clique <a href="http://${process.env.HOST}/api/v1/users/verifyCode/${cookie}">aqui</a> para validar o seu email`,
                         }, (err) =>
                         {
-                            console.log(e)
                             if(err) return res.status(500).json({ok:false, err:"Internal error"});
                             else return res.status(200).json({ok:true});
                         });
