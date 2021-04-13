@@ -299,7 +299,7 @@ exports.db =
         if(err.errno == -111) isWorking = false 
         return next(true);
       }
-      next(false, v[0].replace("'", "").replace("'", ""));
+      next(false, v[0]);
     });
   },
   updateVerificationStatus: (u, next) =>

@@ -92,7 +92,7 @@ exports.default =
                     {
                         mail.sendMail(
                         {
-                            to: r.email.replace("'", "").replace("'", ""),
+                            to: r.email,
                             from: process.env.MAIL_FROM, 
                             subject: 'Código de confirmação',
                             text: `Este é o seu código de confirmação para a aplicação ${cookie}`,
@@ -325,13 +325,22 @@ exports.default =
                             log(e, false);
                             return res.status(500).json({ok:false, err:"Internal error"})
                         }
+                        /** The database answer shold be consisent, prevent crazy replyes leaking
+                         * some important data
+                         */
+                        if((!(sanitize(r.name) < 0 && sanitize(r.email) < 0 && sanitize(r.metainfo) < 0))
+                            || typeof(r.name) != "string" || typeof(r.email) != "string" || typeof(r.type) != "bool"
+                            || typeof(r.metainfo) != "string" || typeof(r.profileImage) != "string")
+
+                                return res.status(500).json({ok:false, data:"Internal error"});
+
                         return res.status(200).json({ok:true, data:
                             {
-                                "name":r.name.replace("'", "").replace("'", ""),
+                                "name":r.name,
                                 "type":r.type,
-                                "email":r.email.replace("'", "").replace("'", ""),
-                                "metaInfo":r.metaInfo.replace("'", "").replace("'", ""),
-                                "profileImage":r.profilePic.replace("'", "").replace("'", "")
+                                "email":r.email,
+                                "metaInfo":r.metaInfo,
+                                "profileImage":r.profilePic
                             }});
                     });
                 })

@@ -14,6 +14,7 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.disable('x-powered-by');
 
 /** Routes */
 app.use('/api/v1/analyze/', analyzeRouter);
