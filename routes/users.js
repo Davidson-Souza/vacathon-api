@@ -47,6 +47,6 @@ router.delete("/deleteUser", controller.deleteUser);
 // Update the user profile picture
 router.patch("/setProfilePicture", upload.single("profilePic"),controller.uploadProfileImage);
 router.get("/sendVerificationCode", controller.requestConfirmationCode);
-router.get("/verifyCode/:code", controller.verifyCode);
+router.get("/verifyCode/:cookie",controller.verifyCode);
 router.post("/recoveryPassword", controller.recoverPassword);
 module.exports = router;

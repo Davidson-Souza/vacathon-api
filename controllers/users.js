@@ -26,12 +26,19 @@ exports.default =
     {
       return res.status(403).json({ok:false, err:"Missing id param"})
     },
-    uploadProfileImage:(req, res, next) =>
+    uploadProfileImage: async (req, res, next) =>
     {
         if(!(req.file && req.cookies && req.cookies.uid && req.files.profileImg))
             return res.status(400).json({ok:false, err:"Missing information"});
         
         const cookie = req.cookies.uid;
+        const isExpired = await statusDb.isExpired(cookie);
+        
+        if(isExpired == -1)
+            return res.status(403).json({ok:false, err:"Internal error"});
+        if(isExpired == true)
+            return res.status(403).json({ok:false, err:"Your session expired"});
+        
         this.default.isAuthenticated(cookie)
             .then( d =>
             {
@@ -59,7 +66,14 @@ exports.default =
         if (!(req.cookies && req.cookies.uid))
             return res.status(403).json({ok:false, err:"Missing cookie"});
         const cookie = req.cookies.uid;
-    
+        
+        const isExpired = await statusDb.isExpired(cookie);
+        
+        if(isExpired == -1)
+            return res.status(403).json({ok:false, err:"Internal error"});
+        if(isExpired == true)
+            return res.status(403).json({ok:false, err:"Your session expired"});
+        
         /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(cookie) < 0))
             return res.status(400).json({ok:false, err:"Forbidden character"});
@@ -119,23 +133,29 @@ exports.default =
                 log("users::isAuthenticated: Missing cookie", true);
                 return ;
             }
-
             statusDb.lookUpCookie(cookie, (d) =>
             {
+
                 if(!d)
-                    reject();
+                    return reject();
                 /**If the user is authenticated return it's session information */
                 accept(d);
             });
         });
     },
-    verifyCode: (req, res, next) =>
+    verifyCode: async (req, res, next) =>
     {
-        const code = req.params.code;
-
+        const code = req.params.cookie;
         if(sanitize(code) < 0)
             return res.status(400).json({ok:false, err:"Forbidden character"});
-
+        
+        const isExpired = await statusDb.isExpired(code);
+        
+        if(isExpired == -1)
+            return res.status(403).json({ok:false, err:"Internal error"});
+        if(isExpired == true)
+            return res.status(403).json({ok:false, err:"Your code expired"});
+        
         statusDb.lookUpCookie(code, r =>
             {
                 if(!r)
@@ -143,7 +163,11 @@ exports.default =
                 permanentStorage.updateVerificationStatus(r, (err) =>
                 {
                     if(err) return res.status(500).json({ok:false, err:"Internal error"});
-                    else  return res.status(200).json({ok:true});
+                    else 
+                    {
+                        statusDb.deleteCookie(code)
+                        return res.status(200).json({ok:true});
+                    }
                 })
             });
     },
@@ -184,6 +208,13 @@ exports.default =
             return res.status(400).json({ok:false, err:"Missing new data"})
         
         const cookie = req.cookies.uid;
+        const isExpired = await statusDb.isExpired(cookie);
+        
+        if(isExpired == -1)
+            return res.status(403).json({ok:false, err:"Internal error"});
+        if(isExpired == true)
+            return res.status(403).json({ok:false, err:"Your session expired"});
+        
         if ((await sanitize(cookie)) < 0)
             return res.status(400).json({ok:false, err:"Forbidden characters found"});
 
@@ -307,12 +338,20 @@ exports.default =
         if (!(req.cookies && req.cookies.uid))
             return res.status(403).json({ok:false, err:"Missing cookie"});
         const cookie = req.cookies.uid;
+        
         /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(cookie) < 0))
             return res.status(400).json({ok:false, err:"Forbidden character"});
         this.default.isAuthenticated(cookie)
             .then( d =>
                 {
+                    statusDb.isExpired(cookie, async isExpired =>
+                    {
+                        if(isExpired == -1)
+                            return res.status(403).json({ok:false, err:"Internal error"});
+                        if(isExpired == true)
+                            return res.status(403).json({ok:false, err:"Your session expired"});
+                    
                    
                     /** If all happens well, return the values */
                     permanentStorage.getUserPrivateInfoById(d, (e, r) =>
@@ -323,7 +362,7 @@ exports.default =
                             return res.status(500).json({ok:false, err:"Internal error"})
                         }
                         /** 
-                         * The database answer shold be consisent, prevent crazy replyes leaking
+                         * The database answer shold be consisent, prevent crazy replies leaking
                          * some important data
                          */
                         if((!(sanitize(r.name) < 0 && sanitize(r.email) < 0 && sanitize(r.metainfo) < 0)))
@@ -339,12 +378,12 @@ exports.default =
                             }});
                     });
                 })
+            })
             .catch( e =>
-                {
-                    if(e)
-                        log(e);
-                    return res.status(404).json({ok:false, err:"User not found"})
-                })
+            {
+                console.log(e)
+                return res.status(404).json({ok:false, err:"User not found"})
+            })
     },
     logOut: async (req, res, next) =>
     {

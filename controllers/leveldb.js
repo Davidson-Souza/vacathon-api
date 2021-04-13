@@ -3,8 +3,9 @@ const leveldown = require("leveldown");
 const sha256d   = require("../utilities").default.sha256d;
 const db        = leveldown("../tmp/");
 let isWorking = false;
+var d = new Date();
 
-db.open("../tmp/session", (err) =>
+db.open("tmp/session", (err) =>
 {
     if(err)
     {
@@ -35,7 +36,7 @@ exports.db =
         }
         /** @todo that is clearly a bad method */
         const cookie = type + await sha256d(`cookie${Math.floor(Math.random() * 123123123123123123123)}`);
-        db.put(cookie, uid, function (err)
+        db.put(cookie, `${d.getTime()};${uid}`, function (err)
         {
             if(err)
             {
@@ -53,7 +54,20 @@ exports.db =
         })
         return true;
     },
-
+    isExpired:async (c, next) =>
+    {
+        await db.get(c, (e, v) =>
+        {
+            if(e!=null)
+                return next(-1);
+            const parsed = v.toString().split(";");
+            if(c.charAt(0) == '0' && Number (parsed[0]) < d.getTime())
+                return next(true);
+            if(c.charAt(0) == '1' && Number (parsed[0]) < d.getTime())
+                return next(true);
+            next(false)
+        });
+    },
     lookUpCookie:(c, next) =>
     {
         db.get(c, (e, v) =>
@@ -62,7 +76,7 @@ exports.db =
             {
                 next(false); 
             }
-            else next(v.toString())
+            else next(v.toString().split(";")[1])
         });
     },
 };
