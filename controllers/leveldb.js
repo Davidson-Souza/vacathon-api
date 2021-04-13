@@ -61,10 +61,17 @@ exports.db =
             if(e!=null)
                 return next(-1);
             const parsed = v.toString().split(";");
-            if(c.charAt(0) == '0' && Number (parsed[0]) < d.getTime())
+            /** Session cookies live more than verification code */
+            if(c.charAt(0) == '0' && Number (parsed[0]) + 1000 < d.getTime())
+            {
+                this.db.deleteCookie(c);
                 return next(true);
-            if(c.charAt(0) == '1' && Number (parsed[0]) < d.getTime())
+            }
+            if((c.charAt(0) == '1' || c.charAt(0) == '2') && Number (parsed[0]) + 10 < d.getTime())
+            {
+                this.db.deleteCookie(c);
                 return next(true);
+            }
             next(false)
         });
     },

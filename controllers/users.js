@@ -381,7 +381,6 @@ exports.default =
             })
             .catch( e =>
             {
-                console.log(e)
                 return res.status(404).json({ok:false, err:"User not found"})
             })
     },
