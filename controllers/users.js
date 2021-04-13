@@ -79,7 +79,6 @@ exports.default =
             /** If all happens well, return the values */
             permanentStorage.getUserPrivateInfoById(d, async (e, r) =>
             {          
-                console.log("djfkd")      
                 if(e)
                 {
                     log(e, false);
@@ -193,7 +192,7 @@ exports.default =
         /** Verify each field, and copy it */
         /** 
          * Note: Why so many verifications? That data will be directly inserted in our database, if
-         * anything goes wrong, our database can break, so make sure only the secure information goes in
+         * anything goes wrong, our database can break, so make sure only the secure and required information goes in
          */
         if ((sanitize(req.body.email) > 0) && typeof(req.body.email) == "string") email = req.body.email; else return res.status(400).json({ok:false, err:"Forbidden characters found"});
         /** Booleans don't have characters */
@@ -309,7 +308,6 @@ exports.default =
         if (!(req.cookies && req.cookies.uid))
             return res.status(403).json({ok:false, err:"Missing cookie"});
         const cookie = req.cookies.uid;
-    
         /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(cookie) < 0))
             return res.status(400).json({ok:false, err:"Forbidden character"});
@@ -325,13 +323,11 @@ exports.default =
                             log(e, false);
                             return res.status(500).json({ok:false, err:"Internal error"})
                         }
-                        /** The database answer shold be consisent, prevent crazy replyes leaking
+                        /** 
+                         * The database answer shold be consisent, prevent crazy replyes leaking
                          * some important data
                          */
-                        if((!(sanitize(r.name) < 0 && sanitize(r.email) < 0 && sanitize(r.metainfo) < 0))
-                            || typeof(r.name) != "string" || typeof(r.email) != "string" || typeof(r.type) != "bool"
-                            || typeof(r.metainfo) != "string" || typeof(r.profileImage) != "string")
-
+                        if((!(sanitize(r.name) < 0 && sanitize(r.email) < 0 && sanitize(r.metainfo) < 0)))
                                 return res.status(500).json({ok:false, data:"Internal error"});
 
                         return res.status(200).json({ok:true, data:
