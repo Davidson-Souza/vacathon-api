@@ -67,7 +67,6 @@ exports.default =
         this.default.isAuthenticated(cookie)
         .then( async (d) =>
         {
-            console.log(d);
 
             /** Verify if the uid exists and belong to the authenticated user */  
             if(!d)
@@ -78,7 +77,7 @@ exports.default =
 
             /** If all happens well, return the values */
             permanentStorage.getUserPrivateInfoById(d, async (e, r) =>
-            {          
+            {
                 if(e)
                 {
                     log(e, false);
@@ -89,6 +88,7 @@ exports.default =
                     const cookie = await statusDb.createCookie(d, 2)
                     if(typeof(cookie) == "string")
                     {
+                        console.log(e)
                         mail.sendMail(
                         {
                             to: r.email,
@@ -98,6 +98,7 @@ exports.default =
                             html: `Clique <a href="${process.env.HOST}/api/v1/users/verifyCode/${cookie}">aqui </a> para validar o seu email`,
                         }, (err) =>
                         {
+                            console.log(e)
                             if(err) return res.status(500).json({ok:false, err:"Internal error"});
                             else return res.status(200).json({ok:true});
                         });
@@ -381,7 +382,6 @@ exports.default =
         userInfo.password = await sha256d(b.password);
         permanentStorage.getUserByEmail(b.email, (e, r) =>
         {
-            console.log(e, r)
             if(!r)
             {
                 /** Create the user */
@@ -425,8 +425,6 @@ exports.default =
                 {
                     permanentStorage.deleteUser(d, (e, r) =>
                     {
-                        console.log("deleting");
-
                         if(e)
                         {
                             log(e, false);
