@@ -32,24 +32,25 @@ exports.default =
             return res.status(400).json({ok:false, err:"Missing information"});
         
         const cookie = req.cookies.uid;
-        const isExpired = await statusDb.isExpired(cookie);
-        
-        if(isExpired == -1)
-            return res.status(403).json({ok:false, err:"Internal error"});
-        if(isExpired == true)
-            return res.status(403).json({ok:false, err:"Your session expired"});
-        
+
         this.default.isAuthenticated(cookie)
             .then( d =>
             {
-                permanentStorage.setProfileImage(d, req.file.filename, (err, data) =>
+                statusDb.isExpired(cookie, async isExpired =>
                 {
-                    if(err)
+                    if(isExpired == -1)
+                        return res.status(403).json({ok:false, err:"Internal error"});
+                    if(isExpired == true)
+                        return res.status(403).json({ok:false, err:"Your session expired"});
+                    permanentStorage.setProfileImage(d, req.file.filename, (err, data) =>
                     {
-                        return res.status(500).json({ok:false, err:"Internal error"});
-                    }
-                    return res.status(200).json({ok:true});
-                });
+                        if(err)
+                        {
+                            return res.status(500).json({ok:false, err:"Internal error"});
+                        }
+                        return res.status(200).json({ok:true});
+                    });
+                })
             })
             .catch(e =>
                 {
@@ -67,13 +68,6 @@ exports.default =
             return res.status(403).json({ok:false, err:"Missing cookie"});
         const cookie = req.cookies.uid;
         
-        const isExpired = await statusDb.isExpired(cookie);
-        
-        if(isExpired == -1)
-            return res.status(403).json({ok:false, err:"Internal error"});
-        if(isExpired == true)
-            return res.status(403).json({ok:false, err:"Your session expired"});
-        
         /** Check whether there is some kind of sus data, like some sql injection attack */
         if ((await sanitize(cookie) < 0))
             return res.status(400).json({ok:false, err:"Forbidden character"});
@@ -81,41 +75,48 @@ exports.default =
         this.default.isAuthenticated(cookie)
         .then( async (d) =>
         {
-
-            /** Verify if the uid exists and belong to the authenticated user */  
-            if(!d)
+            statusDb.isExpired(cookie, async isExpired =>
             {
-                log(d, false);
-                return res.status(500).json({ok:false, err:"Internal error"})
-            }
-
-            /** If all happens well, return the values */
-            permanentStorage.getUserPrivateInfoById(d, async (e, r) =>
-            {
-                if(e)
+                if(isExpired == -1)
+                    return res.status(403).json({ok:false, err:"Internal error"});
+                if(isExpired == true)
+                    return res.status(403).json({ok:false, err:"Your session expired"});
+               
+                /** Verify if the uid exists and belong to the authenticated user */  
+                if(!d)
                 {
-                    log(e, false);
+                    log(d, false);
                     return res.status(500).json({ok:false, err:"Internal error"})
                 }
-                if(r)
+
+                /** If all happens well, return the values */
+                permanentStorage.getUserPrivateInfoById(d, async (e, r) =>
                 {
-                    const cookie = await statusDb.createCookie(d, 2)
-                    if(typeof(cookie) == "string")
+                    if(e)
                     {
-                        mail.sendMail(
+                        log(e, false);
+                        return res.status(500).json({ok:false, err:"Internal error"})
+                    }
+                    if(r)
+                    {
+                        const cookie = await statusDb.createCookie(d, 2)
+                        if(typeof(cookie) == "string")
                         {
-                            to: r.email,
-                            from: process.env.MAIL_FROM, 
-                            subject: 'Código de confirmação',
-                            text: `Este é o seu código de confirmação para a aplicação ${cookie}`,
-                            html: `Clique <a href="http://${process.env.HOST}/api/v1/users/verifyCode/${cookie}">aqui</a> para validar o seu email`,
-                        }, (err) =>
-                        {
-                            if(err) return res.status(500).json({ok:false, err:"Internal error"});
-                            else return res.status(200).json({ok:true});
-                        });
-                    };
-                }
+                            mail.sendMail(
+                            {
+                                to: r.email,
+                                from: process.env.MAIL_FROM, 
+                                subject: 'Código de confirmação',
+                                text: `Este é o seu código de confirmação para a aplicação ${cookie}`,
+                                html: `Clique <a href="http://${process.env.HOST}/api/v1/users/verifyCode/${cookie}">aqui</a> para validar o seu email`,
+                            }, (err) =>
+                            {
+                                if(err) return res.status(500).json({ok:false, err:"Internal error"});
+                                else return res.status(200).json({ok:true});
+                            });
+                        };
+                    }
+                });
             });
         })
         .catch((e) =>
@@ -149,25 +150,25 @@ exports.default =
         if(sanitize(code) < 0)
             return res.status(400).json({ok:false, err:"Forbidden character"});
         
-        const isExpired = await statusDb.isExpired(code);
-        
-        if(isExpired == -1)
-            return res.status(403).json({ok:false, err:"Internal error"});
-        if(isExpired == true)
-            return res.status(403).json({ok:false, err:"Your code expired"});
-        
         statusDb.lookUpCookie(code, r =>
             {
-                if(!r)
-                    return res.status(403).json({ok:false, err:"Wrong code"});
-                permanentStorage.updateVerificationStatus(r, (err) =>
+                statusDb.isExpired(code, async isExpired =>
                 {
-                    if(err) return res.status(500).json({ok:false, err:"Internal error"});
-                    else 
+                    if(isExpired == -1)
+                        return res.status(403).json({ok:false, err:"Internal error"});
+                    if(isExpired == true)
+                        return res.status(403).json({ok:false, err:"Your session expired"});
+                    if(!r)
+                        return res.status(403).json({ok:false, err:"Wrong code"});
+                    permanentStorage.updateVerificationStatus(r, (err) =>
                     {
-                        statusDb.deleteCookie(code)
-                        return res.status(200).json({ok:true});
-                    }
+                        if(err) return res.status(500).json({ok:false, err:"Internal error"});
+                        else 
+                        {
+                            statusDb.deleteCookie(code)
+                            return res.status(200).json({ok:true});
+                        }
+                    })
                 })
             });
     },
@@ -233,23 +234,30 @@ exports.default =
         this.default.isAuthenticated(cookie)
             .then( d =>
                 {
-                    permanentStorage.updateUser([name, type, email, metaInfo, d], (e, r) =>
+                    statusDb.isExpired(cookie, async isExpired =>
                     {
-                        if(e)
+                        if(isExpired == -1)
+                            return res.status(403).json({ok:false, err:"Internal error"});
+                        if(isExpired == true)
+                            return res.status(403).json({ok:false, err:"Your session expired"});
+                
+                        permanentStorage.updateUser([name, type, email, metaInfo, d], (e, r) =>
                         {
-                            log(e, false);
-                            return res.status(500).json({ok:false, err:"Internal error"})
-                        }
-                        return res.status(200).json({ok:true});
-                    });
+                            if(e)
+                            {
+                                log(e, false);
+                                return res.status(500).json({ok:false, err:"Internal error"})
+                            }
+                            return res.status(200).json({ok:true});
+                        });
+                    })
                 })
-
-            .catch((e) =>
-            {
-                if(e)
-                    log(e);
-                return res.status(500).json({ok:false, err:"Internal error"})
-            });
+                .catch((e) =>
+                {
+                    if(e)
+                        log(e);
+                    return res.status(500).json({ok:false, err:"Internal error"})
+                });
     },
     getUserMetaInfoByName: async (req, res, next)=> 
     {
@@ -353,36 +361,36 @@ exports.default =
                             return res.status(403).json({ok:false, err:"Your session expired"});
                     
                    
-                    /** If all happens well, return the values */
-                    permanentStorage.getUserPrivateInfoById(d, (e, r) =>
-                    {
-                        if(e)
+                        /** If all happens well, return the values */
+                        permanentStorage.getUserPrivateInfoById(d, (e, r) =>
                         {
-                            log(e, false);
-                            return res.status(500).json({ok:false, err:"Internal error"})
-                        }
-                        /** 
-                         * The database answer shold be consisent, prevent crazy replies leaking
-                         * some important data
-                         */
-                        if((!(sanitize(r.name) < 0 && sanitize(r.email) < 0 && sanitize(r.metainfo) < 0)))
-                                return res.status(500).json({ok:false, data:"Internal error"});
-
-                        return res.status(200).json({ok:true, data:
+                            if(e)
                             {
-                                "name":r.name,
-                                "type":r.type,
-                                "email":r.email,
-                                "metaInfo":r.metaInfo,
-                                "profileImage":r.profilePic
-                            }});
-                    });
+                                log(e, false);
+                                return res.status(500).json({ok:false, err:"Internal error"})
+                            }
+                            /** 
+                            * The database answer shold be consisent, prevent crazy replies leaking
+                            * some important data
+                            */
+                            if((!(sanitize(r.name) < 0 && sanitize(r.email) < 0 && sanitize(r.metainfo) < 0)))
+                                    return res.status(500).json({ok:false, data:"Internal error"});
+
+                            return res.status(200).json({ok:true, data:
+                                {
+                                    "name":r.name,
+                                    "type":r.type,
+                                    "email":r.email,
+                                    "metaInfo":r.metaInfo,
+                                    "profileImage":r.profilePic
+                                }});
+                        });
+                    })
                 })
-            })
-            .catch( e =>
-            {
-                return res.status(404).json({ok:false, err:"User not found"})
-            })
+                .catch( e =>
+                {
+                    return res.status(404).json({ok:false, err:"User not found"})
+                })
     },
     logOut: async (req, res, next) =>
     {
@@ -393,9 +401,17 @@ exports.default =
         
         if((await sanitize(cookie)) < 0)
             return res.status(400).json({ok:false, err:"Forbidden character"});
-        
-        if(statusDb.deleteCookie(cookie))
-            return res.status(200).json({ok:true});
+        statusDb.isExpired(cookie, async isExpired =>
+        {
+            if(isExpired == -1)
+                return res.status(403).json({ok:false, err:"Internal error"});
+            if(isExpired == true)
+                return res.status(403).json({ok:false, err:"Your session expired"});
+                
+               
+            if(statusDb.deleteCookie(cookie))
+                return res.status(200).json({ok:true});
+        });
     },
     createUser: async (req, res, next) =>
     {
@@ -459,16 +475,24 @@ exports.default =
         this.default.isAuthenticated(cookie)
             .then( d =>
                 {
-                    permanentStorage.deleteUser(d, (e, r) =>
+                    statusDb.isExpired(cookie, async isExpired =>
                     {
-                        if(e)
+                        if(isExpired == -1)
+                            return res.status(403).json({ok:false, err:"Internal error"});
+                        if(isExpired == true)
+                            return res.status(403).json({ok:false, err:"Your session expired"});
+                        
+                        permanentStorage.deleteUser(d, (e, r) =>
                         {
-                            log(e, false);
-                            return res.status(500).json({ok:false, err:"Internal error"})
-                        }
-                        /**@todo remove files too */
-                        return res.status(200).json({ok:true});
-                    });
+                            if(e)
+                            {
+                                log(e, false);
+                                return res.status(500).json({ok:false, err:"Internal error"})
+                            }
+                            /**@todo remove files too */
+                            return res.status(200).json({ok:true});
+                        });
+                    })
                 })
                 .catch( e =>
                     {
@@ -487,7 +511,7 @@ exports.default =
         
         statusDb.lookUpCookie(cookie, (uid) =>
         {
-        
+            /**@todo */
         })
     },
     getRecoverPassword: async (req, res, next) =>
@@ -540,15 +564,24 @@ exports.default =
         this.default.isAuthenticated(cookie)
             .then( d =>
                 {
-                    permanentStorage.updateUserPassword([newPasswordHash, oldPasswordHash, d], (e, r) =>
+                    statusDb.isExpired(cookie, async isExpired =>
                     {
-                        if(e)
+                        if(isExpired == -1)
+                            return res.status(403).json({ok:false, err:"Internal error"});
+                        if(isExpired == true)
+                            return res.status(403).json({ok:false, err:"Your session expired"});
+                        
+                       
+                        permanentStorage.updateUserPassword([newPasswordHash, oldPasswordHash, d], (e, r) =>
                         {
-                            log(e, false);
-                            return res.status(500).json({ok:false, err:"Internal error"})
-                        }
-                        else return res.status(200).json({ok:true});
-                    });
+                            if(e)
+                            {
+                                log(e, false);
+                                return res.status(500).json({ok:false, err:"Internal error"})
+                            }
+                            else return res.status(200).json({ok:true});
+                        });
+                        })
                 })
                 .catch( e =>
                     {
