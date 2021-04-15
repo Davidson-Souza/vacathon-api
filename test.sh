@@ -2,7 +2,7 @@
 # Useful variables
 
 echo "Starting some useful tests"
-baseUrl="localhost:8080"
+baseUrl="http://sperkleformilk.sytes.net:8001"
 contType="Content-Type: application/json"
 authUser='{"email": "example@email.com", "type":12, "password":"2321", "metaInfo":"something"}'
 createUser='{"name": "linux Is Life", "email": "example@email.com", "type":false, "password":"2321", "metaInfo":"something"}'
@@ -21,7 +21,6 @@ else
     echo "Error: creating user!"
     exit
 fi
-
 # GetInfo
 if [ $cookie = "null" ]
 then
@@ -47,11 +46,10 @@ echo "Deleting the user"
 # Authenticate again
 cookie=$(curl -X POST -H "$contType" -d "$authUser" --silent  $baseUrl/api/v1/users/authenticateUser | jq ".cookie") 
 # Delete the user
-
 res=$(curl -X DELETE $baseUrl/api/v1/users/deleteUser -H "Cookie: userId=$cookie" --silent | jq ".ok")
 if [ $res = "null" ]
 then 
-    echo "Error: delting user"
+    echo "Error: deleting user"
     exit
 fi
 echo "Finished!"
